@@ -1,27 +1,44 @@
 // /src/lib/types.ts
 
 /**
- * User-supplied options
+ * User-supplied options, shape passed to promptHandler
  */
 export interface PromptInput {
     topic: string;
     pages: number;
     authorStyle?: string;
     quality: 0 | 1 | 2;     // draft rewrites/edits
+    artStyle?: string;
+    readerVoice?: string;
 }
 
 
-/**
- * What the planner returns
- */
-export interface PagePlan {
-    page: number;   // 1-based
-    summary: string;    // 1-sentence "beat"
+// Writing Content with metadata
+export interface Content {
+    text: string;
+    metadata: ContentMetadata;
 }
 
-export interface StoryPlan {
-    title: string;
-    outline: PagePlan[];
+
+export interface ContentMetadata {
+    prompt: PromptInput;
+    iteration: number;
+    timestamp: Date;
+    modelInfo: {
+        name: string;
+        version?: string;
+        provider?: string;
+    };
+    pageNumber?: number;
+}
+
+
+// Context provided to modules of the content in previous pages
+export interface PageContext {
+    storyPlan: string;          // Output of storyPlanner (string)
+    currentPageIndex: number;   // Current page being processed (0-based)
+    currentPagePlan: string;    // Output of pagePlanner (string)
+    recentPreviousPagesFull: Content[];   // Content of most recent (up to) 2 pages in full
 }
 
 
