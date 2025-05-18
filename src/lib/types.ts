@@ -1,7 +1,7 @@
 // /src/lib/types.ts
 
 /**
- * User-supplied options, shape passed to promptHandler
+ * User-supplied options
  */
 export interface PromptInput {
     topic: string;
