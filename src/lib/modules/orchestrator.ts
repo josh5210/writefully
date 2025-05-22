@@ -52,7 +52,11 @@ export class Orchestrator extends EventEmitter {
     private critic: Critic;
     private editor: Editor;
     private state: StoryGenerationState;
-    private prompt: PromptInput;
+    private prompt: PromptInput = {
+        topic: '',
+        pages: 1,
+        quality: 0
+    };
     private isGenerating: boolean = false;
     private shouldContinue: boolean = true;
 

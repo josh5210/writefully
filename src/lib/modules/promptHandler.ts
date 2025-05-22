@@ -252,7 +252,7 @@ export class PromptHandler {
             userPrompt += ` that was written to be in the style of ${originalPrompt.authorStyle}`;
         }
 
-        userPrompt == `.\n\n`;
+        userPrompt += `.\n\n`;
 
         // Add page-specific context if available
         if (pageContext) {
@@ -282,7 +282,7 @@ export class PromptHandler {
      * Editor prompts
      */
     createEditorSystemPrompt(): string {
-        let systemPrompt = `You are a master editor with exceptional skill in transforming good writing into excellent writing.
+        const systemPrompt = `You are a master editor with exceptional skill in transforming good writing into excellent writing.
             Your task is to significantly imrpove the text provided to you.
             
             Focus on:
