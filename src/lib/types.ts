@@ -84,3 +84,70 @@ export interface ChatMessage {
   role: ChatRole;
   content: string | ChatChunk[];
 }
+
+
+/**
+ * Session management types
+ */
+export interface StorySession {
+    sessionId: string;
+    storyId: string;
+    status: 'pending' | 'generating' | 'completed' | 'failed' | 'cancelled';
+    prompt: PromptInput;
+    createdAt: Date;
+    updatedAt: Date;
+    progress: SessionProgress;
+    error?: string;
+}
+
+export interface SessionProgress {
+    currentPage: number;
+    totalPages: number;
+    completedPages: number;
+    currentStep?: 'planning' | 'writing' | 'critiquing' | 'editing';
+    estimatedTimeRemaining?: number;    // seconds
+}
+
+
+/**
+ * API Request/Response types
+ */
+export interface StartStoryRequest {
+    request: PromptInput;
+}
+
+export interface StartStoryResponse {
+    sessionId: string;
+    storyId: string;
+    status: string;
+    message: string;
+    progress: SessionProgress;
+}
+
+export interface GetStatusReponse {
+    sessionId: string;
+    storyId: string;
+    status: string;
+    progress: SessionProgress;
+    prompt: PromptInput;
+    createdAt: Date;
+    error?: string;
+}
+
+export interface CancelStoryResponse {
+    sessionId: string;
+    status: string;
+    message: string;
+}
+
+export interface HealthResponse {
+    status: 'healthy' | 'unhealthy';
+    timestamp: string;
+    version?: string;
+    environment: string;
+    services: {
+        api: 'healthy' | 'unhealthy';
+        database?: 'healthy' | 'unhealthy';
+        orchestrator?: 'healthy' | 'unhealthy';
+    };
+}
