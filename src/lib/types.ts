@@ -98,6 +98,7 @@ export interface StorySession {
     updatedAt: Date;
     progress: SessionProgress;
     error?: string;
+    expiresAt: Date;
 }
 
 export interface SessionProgress {
@@ -106,6 +107,18 @@ export interface SessionProgress {
     completedPages: number;
     currentStep?: 'planning' | 'writing' | 'critiquing' | 'editing';
     estimatedTimeRemaining?: number;    // seconds
+}
+
+export interface CreateSessionOptions {
+    prompt: PromptInput;
+    sessionId?: string;     // Optional override for testing
+    storyId?: string;       // Optional override for testing
+}
+
+export interface UpdateSessionOptions {
+    status?: StorySession['status'];
+    progress?: Partial<SessionProgress>;
+    error?: string;
 }
 
 

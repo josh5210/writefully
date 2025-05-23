@@ -1,11 +1,8 @@
 // /src/app/api/story/[sessionId]/cancel/route.ts
 
-import { CancelStoryResponse, StorySession } from "@/lib/types";
+import { sessionManager } from "@/lib/session/sessionManager";
+import { CancelStoryResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
-
-
-// This will be imported from session manager later
-declare const activeSessions: Map<string, StorySession>;
 
 
 export async function DELETE(
@@ -24,8 +21,8 @@ export async function DELETE(
             );
         }
 
-        // Get session from storage
-        const session = activeSessions.get(sessionId);
+        // Get session from session manager
+        const session = sessionManager.getSession(sessionId);
 
         if (!session) {
             return NextResponse.json(
@@ -49,9 +46,14 @@ export async function DELETE(
             );
         }
 
-        // Update session stats
-        session.status = 'cancelled';
-        session.updatedAt = new Date();
+        // Cancel session using session manager
+        const cancelled = sessionManager.cancelSession(sessionId);
+        if (!cancelled) {
+            return NextResponse.json(
+                { error: 'Failed to cancel session' },
+                { status: 500 }
+            );
+        }
 
         // TODO: signal orchestrator to stop generation
         // This is where to call orchestrator.cancelGeneration()

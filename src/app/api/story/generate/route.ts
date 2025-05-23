@@ -1,19 +1,11 @@
 // /src/app/api/story/generate/route.ts
 
-import { PromptInput, StartStoryResponse, StorySession } from "@/lib/types";
+import { sessionManager } from "@/lib/session/sessionManager";
+import { PromptInput, StartStoryResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from 'uuid';
 
 
-
-
-
-// For now, StorySession could be defined here, but must later be moved to proper session manager
-const activeSessions = new Map<string, StorySession>();
-// activeSessions will handle in-memory session storage
-
-
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
     // Validate the request body
     let body: PromptInput;
     try {
@@ -42,6 +34,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (body.topic.length > 500) {
+            return NextResponse.json(
+                { error: 'Topic must be less than 500 characters' },
+                { status: 400 }
+            );
+        }
+
         // Create validated prompt object
         const prompt: PromptInput = {
             topic: body.topic.trim(),
@@ -52,36 +51,17 @@ export async function POST(request: NextRequest) {
             readerVoice: typeof body.readerVoice === 'string' ? body.readerVoice.trim() : undefined,
         };
 
-        // Generate unqiue IDs
-        const sessionId = uuidv4();
-        const storyId = uuidv4();
+        // Create session using session manager
+        const session = sessionManager.createSession({ prompt });
 
-        // Create session
-        const session: StorySession = {
-            sessionId,
-            storyId,
-            status: 'pending',
-            prompt,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            progress: {
-                currentPage: 0,
-                totalPages: prompt.pages,
-                completedPages: 0,
-                currentStep: 'planning',
-            },
-        };
+        // TODO: Start story generation process here
+        console.log(`Story generation started for session ${session.sessionId}`);
+        console.log(`Topic: "${prompt.topic}", Pages: ${prompt.pages}, Quality: ${prompt.quality}`);
 
-        // Store session
-        activeSessions.set(sessionId, session);
-
-        // TODO: Start story generation process
-        console.log(`Story generation started for session ${sessionId}`);
-
-        // Return session info
+        // Return response
         const response: StartStoryResponse = {
-            sessionId,
-            storyId,
+            sessionId: session.sessionId,
+            storyId: session.storyId,
             status: session.status,
             message: 'Story generation started successfully',
             progress: session.progress,

@@ -1,16 +1,12 @@
 // /src/app/api/story/[sessionId]/status/route.ts
 
-import { GetStatusReponse, StorySession } from "@/lib/types";
+import { sessionManager } from "@/lib/session/sessionManager";
+import { GetStatusReponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 
-
-// Import sessions (will come from session manager later)
-declare const activeSessions: Map<string, StorySession>;
-
-
 export async function GET(
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: { sessionId: string } }
 ): Promise<NextResponse> {
     
@@ -27,8 +23,8 @@ export async function GET(
             );
         }
 
-        // Get session
-        const session = activeSessions.get(sessionId);
+        // Get session using session manager
+        const session = sessionManager.getSession(sessionId);
         if (!session) {
             return NextResponse.json(
                 { error: 'Session not found' },
@@ -36,6 +32,7 @@ export async function GET(
             );
         }
 
+        // Return response
         const response: GetStatusReponse = {
             sessionId: session.sessionId,
             storyId: session.storyId,
