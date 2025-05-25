@@ -41,7 +41,7 @@ export class StoryEventHandler {
     }
 
 
-    private handleStoryPlanCreated(data: { storyPlan: string }): void {
+    private handleStoryPlanCreated(_data: { storyPlan: string }): void {
         console.log(`Story plan created for session ${this.sessionId}`);
 
         // Can save story plan to db here in future
