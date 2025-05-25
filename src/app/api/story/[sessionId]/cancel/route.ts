@@ -1,5 +1,6 @@
 // /src/app/api/story/[sessionId]/cancel/route.ts
 
+import { storyService } from "@/lib/services/storyService";
 import { sessionManager } from "@/lib/session/sessionManager";
 import { CancelStoryResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
@@ -8,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function DELETE(
     request: NextRequest,
     { params }: { params: { sessionId: string }}
-) {
+): Promise<NextResponse> {
     try {
         const { sessionId } = params;
 
@@ -46,23 +47,31 @@ export async function DELETE(
             );
         }
 
-        // Cancel session using session manager
-        const cancelled = sessionManager.cancelSession(sessionId);
-        if (!cancelled) {
-            return NextResponse.json(
-                { error: 'Failed to cancel session' },
-                { status: 500 }
-            );
+        // Cancel session using session manager and story service
+        try {
+            await storyService.cancelGeneration(sessionId);
+            const cancelled = sessionManager.cancelSession(sessionId);
+
+            if (!cancelled) {
+                return NextResponse.json(
+                    { error: 'Failed to cancel session' },
+                    { status: 500 }
+                );
+            }
+
+            console.log(`Story generation cancelled for session ${sessionId}`);
+
+        } catch (error) {
+            console.error('Error cancelling story generation:', error);
+
+            // Still try to update session status even if orchestrator cancellation failed
+            sessionManager.cancelSession(sessionId);
         }
 
-        // TODO: signal orchestrator to stop generation
-        // This is where to call orchestrator.cancelGeneration()
-        console.log(`Story generation cancelled for session ${sessionId}`);
-
-        // Return confirmation
+        // Return response
         const response: CancelStoryResponse = {
             sessionId: sessionId,
-            status: session.status,
+            status: 'cancelled',
             message: 'Story generation cancelled successfully',
         };
 

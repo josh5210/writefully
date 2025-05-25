@@ -1,5 +1,6 @@
 // /src/app/api/story/generate/route.ts
 
+import { storyService } from "@/lib/services/storyService";
 import { sessionManager } from "@/lib/session/sessionManager";
 import { PromptInput, StartStoryResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
@@ -54,9 +55,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         // Create session using session manager
         const session = sessionManager.createSession({ prompt });
 
-        // TODO: Start story generation process here
-        console.log(`Story generation started for session ${session.sessionId}`);
-        console.log(`Topic: "${prompt.topic}", Pages: ${prompt.pages}, Quality: ${prompt.quality}`);
+        // Start story generation using story service
+        try {
+            await storyService.startGeneration(session.sessionId);
+        } catch (error) {
+            console.error('Failed to start story generation:', error);
+
+            // Update session status to failed
+            sessionManager.setStatus(session.sessionId, 'failed',
+                error instanceof Error ? error.message : 'Unknown error'
+            );
+
+            return NextResponse.json(
+                { error: 'Failed to start story generation' },
+                { status: 500 }
+            );
+        }
+
+        console.log(`Story generation initiated for session ${session.sessionId}`);
+        console.log(`Topic "${prompt.topic}", Pages: ${prompt.pages}, Quality: ${prompt.quality}`);
 
         // Return response
         const response: StartStoryResponse = {
