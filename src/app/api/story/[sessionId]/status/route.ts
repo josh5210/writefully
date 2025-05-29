@@ -6,12 +6,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 
 export async function GET(
-    _request: NextRequest,
-    { params }: { params: { sessionId: string } }
+    request: NextRequest,
+    { params }: { params: Promise<{ sessionId: string }> }
 ): Promise<NextResponse> {
     
     try {
-        const { sessionId } = params;
+        const { sessionId } = await params;
 
         // Validate session ID format
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

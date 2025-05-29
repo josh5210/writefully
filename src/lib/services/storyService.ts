@@ -28,9 +28,19 @@ export class StoryService {
             }
 
             console.log(`Starting story generation for session ${sessionId}`);
+            console.log(`[${sessionId}] Topic: "${session.prompt.topic}", Pages: ${session.prompt.pages}, Quality: ${session.prompt.quality}`);
 
             // Create orchestrator
+            console.log(`[${sessionId}] Creating orchestrator...`);
             const orchestrator = createOrchestrator();
+            console.log(`[${sessionId}] Orchestrator created`);
+
+            // Create event handler and attach to orchestrator
+            const eventHandler = new StoryEventHandler(sessionId);
+            eventHandler.attachToOrchestrator(orchestrator);
+
+            // Store orchestrator for potential cancellation
+            activeOrchestrators.set(sessionId, { orchestrator, eventHandler });
 
             // Start generation (without await, it runs in background)
             orchestrator.generateStory(session.prompt).catch((error) => {
