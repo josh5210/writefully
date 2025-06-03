@@ -4,6 +4,7 @@ import { EventEmitter } from "stream";
 import { StoryEvent } from "../modules/orchestrator";
 import { sessionManager } from "../session/sessionManager";
 import { Content } from "../types";
+import { eventStreamer } from "../services/eventStreamer";
 
 
 export class StoryEventHandler {
@@ -48,6 +49,16 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update session status`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'story_started',
+            data: {
+                totalPages: data.totalPages,
+                status: 'generating'
+            },
+            message: `Story generation started - ${data.totalPages} pages`
+        });
     }
 
 
@@ -65,6 +76,16 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update progress`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'story_plan_created',
+            data: {
+                planLength: data.storyPlan.length,
+                currentStep: 'planning'
+            },
+            message: 'Story plan created'
+        });
     }
 
 
@@ -81,6 +102,18 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update progress for page ${data.pageIndex + 1}`);
         }
+    
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'page_plan_created',
+            data: {
+                pageIndex: data.pageIndex,
+                pageNumber: data.pageIndex + 1,
+                planLength: data.pagePlan.length,
+                currentStep: 'planning'
+            },
+            message: `Page ${data.pageIndex + 1} planned`
+        });
     }
 
 
@@ -97,6 +130,18 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update progress for page ${data.pageIndex + 1}`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'page_content_created',
+            data: {
+                pageIndex: data.pageIndex,
+                pageNumber: data.pageIndex + 1,
+                contentLength: data.content.text.length,
+                currentStep: 'writing'
+            },
+            message: `Page ${data.pageIndex + 1} written`
+        });
     }
 
 
@@ -113,6 +158,18 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update progress for page ${data.pageIndex + 1}`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'page_critique_created',
+            data: {
+                pageIndex: data.pageIndex,
+                pageNumber: data.pageIndex + 1,
+                critiqueLength: data.critique.length,
+                currentStep: 'critiquing'
+            },
+            message: `Page ${data.pageIndex + 1} critiqued`
+        });
     }
 
 
@@ -129,6 +186,19 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update progress for page ${data.pageIndex + 1}`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'page_edited',
+            data: {
+                pageIndex: data.pageIndex,
+                pageNumber: data.pageIndex + 1,
+                contentLength: data.content.text.length,
+                iteration: data.content.metadata.iteration,
+                currentStep: 'editing'
+            },
+            message: `Page ${data.pageIndex + 1} edited (iteration ${data.content.metadata.iteration})`
+        });
     }
 
 
@@ -155,6 +225,22 @@ export class StoryEventHandler {
             console.error(`[${this.sessionId}] Failed to update progress for completed page`);
         }
 
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'page_completed',
+            data: {
+                pageIndex: data.pageIndex,
+                pageNumber: data.pageIndex + 1,
+                content: data.content.text,
+                contentLength: data.content.text.length,
+                completedPages: completedPages,
+                totalPages: data.totalPages,
+                isStoryComplete: isStoryComplete,
+                currentStep: isStoryComplete ? 'completed' : 'planning'
+            },
+            message: `Page ${data.pageIndex + 1} completed (${completedPages}/${data.totalPages})`
+        });
+
         // TODO: In future, save the complteted page to database here
     }
 
@@ -170,6 +256,22 @@ export class StoryEventHandler {
             console.error(`[${this.sessionId}] Failed to update session status to completed`);
         }
 
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'story_completed',
+            data: {
+                totalPages: data.pages.length,
+                status: 'completed',
+                pages: data.pages.map(page => ({
+                    text: page.text,
+                    length: page.text.length,
+                    iteration: page.metadata.iteration,
+                    timestamp: page.metadata.timestamp
+                }))
+            },
+            message: `Story completed - ${data.pages.length} pages finished!`
+        });
+
         // TODO: Save complete story to database here
     }
 
@@ -184,5 +286,15 @@ export class StoryEventHandler {
         } else {
             console.error(`[${this.sessionId}] Failed to update session status to failed`);
         }
+
+        // Broadcast to SSE clients
+        eventStreamer.broadcastToSession(this.sessionId, {
+            type: 'error',
+            data: {
+                error: data.error.message,
+                status: 'failed'
+            },
+            message: `Story generation failed: ${data.error.message}`
+        });
     }
 }
