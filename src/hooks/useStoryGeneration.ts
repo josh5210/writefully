@@ -61,6 +61,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
     const [pages, setPages] = useState<StoryPage[]>([]);
     const [isStarting, setIsStarting] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [processedEventIds, setProcessedEventIds] = useState<Set<string>>(new Set());
 
     // Use event stream hook
     const { isConnected, error: connectionError, lastEvent, events } = useEventStream(sessionId);
@@ -72,128 +73,141 @@ export function useStoryGeneration(): UseStoryGenerationResult {
         console.log('[Frontend] Page completed events received:', pageCompletedEvents.length, pageCompletedEvents.map(e => e.data?.pageNumber));
     }, [events]);
 
-    // Process incoming events
+    // Process incoming events - Process all unprocessed events
     useEffect(() => {
-        if (!lastEvent) return;
+        const unprocessedEvents = events.filter(event =>
+            !processedEventIds.has(`${event.timestamp}-${event.type}`)
+        );
 
-        console.log('[Frontend] Processing event:', lastEvent.type, lastEvent);
-        console.log('[Frontend] Event timestamp:', lastEvent.timestamp, 'Current pages count:', pages.length);
+        if (unprocessedEvents.length === 0) return;
 
-        switch (lastEvent.type) {
-            case 'story_started':
-                setStatus('generating');
-                setProgress(prev => ({
-                    ...prev,
-                    totalPages: lastEvent.data?.totalPages || prev.totalPages,
-                    currentStep: 'planning'
-                }));
-                break;
+        console.log('[Frontend] Processing', unprocessedEvents.length, 'unprocessed events');
 
-            case 'story_plan_created':
-                setProgress(prev => ({
-                    ...prev,
-                    currentStep: 'planning'
-                }));
-                break;
+        unprocessedEvents.forEach(event => {
+            console.log('[Frontend] Processing event:', event.type, event);
+            console.log('[Frontend] Event timestamp:', event.timestamp, 'Current pages count:', pages.length);
 
-            case 'page_plan_created':
-                setProgress(prev => ({
-                    ...prev,
-                    currentPage: lastEvent.data?.pageNumber || prev.currentPage,
-                    currentStep: 'planning'
-                }));
-                break;
+            // Mark as processed
+            setProcessedEventIds(prev => new Set(prev).add(`${event.timestamp}-${event.type}`));
 
-            case 'page_content_created':
-                setProgress(prev => ({
-                    ...prev,
-                    currentPage: lastEvent.data?.pageNumber || prev.currentPage,
-                    currentStep: 'writing'
-                }));
-                break;
-
-            case 'page_critique_created':
-                setProgress(prev => ({
-                    ...prev,
-                    currentStep: 'critiquing'
-                }));
-                break;
-
-            case 'page_edited':
-                setProgress(prev => ({
-                    ...prev,
-                    currentStep: 'editing'
-                }));
-                break;
-
-            case 'page_completed':
-                const pageData = lastEvent.data;
-
-                console.log('[Frontend] Page completed event data:', pageData);
-
-                if (pageData) {
-                    // Add completed page to pages array
-                    const newPage: StoryPage = {
-                        pageNumber: pageData.pageNumber,
-                        content: pageData.content,
-                        length: pageData.contentLength,
-                        completedAt: lastEvent.timestamp,
-                    };
-
-                    console.log('[Frontend] Adding new page:', newPage.pageNumber, 'Content length:', newPage.content?.length || 0);
-                    console.log('[Frontend] Current pages in state before update:', pages.map(p => p.pageNumber));
-
-                    setPages(prev => {
-                        console.log('[Frontend] setPages called with prev:', prev.map(p => p.pageNumber));
-                        // Replace existing page or add new one
-                        const existingIndex = prev.findIndex(p => p.pageNumber === newPage.pageNumber);
-                        if (existingIndex >= 0) {
-                            const updated = [...prev];
-                            updated[existingIndex] = newPage;
-                            console.log('[Frontend] Replaced existing page. Total pages:', updated.length);
-                            return updated;
-                        } else {
-                            const newPages = [...prev, newPage].sort((a, b) => a.pageNumber - b.pageNumber);
-                            console.log('[Frontend] Added new page. Total pages:', newPages.length, 'Page numbers:', newPages.map(p => p.pageNumber));
-                            return newPages;                        }
-                    });
-
+            switch (event.type) {
+                case 'story_started':
+                    setStatus('generating');
                     setProgress(prev => ({
                         ...prev,
-                        completedPages: pageData.completedPages || prev.completedPages,
-                        currentStep: pageData.isStoryComplete ? undefined : 'planning'
+                        totalPages: event.data?.totalPages || prev.totalPages,
+                        currentStep: 'planning'
                     }));
-                } else {
-                    console.log('[Frontend] page_completed event had no data!');
-                }
-                break;
+                    break;
 
-            case 'story_completed':
-                console.log('[Frontend] Story completed event:', lastEvent.data);
-                setStatus('completed');
-                setProgress(prev => ({
-                    ...prev,
-                    currentStep: undefined
-                }));
-                break;
+                case 'story_plan_created':
+                    setProgress(prev => ({
+                        ...prev,
+                        currentStep: 'planning'
+                    }));
+                    break;
 
-            case 'error':
-                setStatus('failed');
-                setError(lastEvent.data?.error || 'An error occurred during story generation');
-                break;
+                case 'page_plan_created':
+                    setProgress(prev => ({
+                        ...prev,
+                        currentPage: event.data?.pageNumber || prev.currentPage,
+                        currentStep: 'planning'
+                    }));
+                    break;
 
-            case 'session_state':
-                // Handle initial session state
-                if (lastEvent.data) {
-                    setStatus(lastEvent.data.status);
-                    setProgress(lastEvent.data.progress);
-                    if (lastEvent.data.error) {
-                        setError(lastEvent.data.error);
+                case 'page_content_created':
+                    setProgress(prev => ({
+                        ...prev,
+                        currentPage: event.data?.pageNumber || prev.currentPage,
+                        currentStep: 'writing'
+                    }));
+                    break;
+
+                case 'page_critique_created':
+                    setProgress(prev => ({
+                        ...prev,
+                        currentStep: 'critiquing'
+                    }));
+                    break;
+
+                case 'page_edited':
+                    setProgress(prev => ({
+                        ...prev,
+                        currentStep: 'editing'
+                    }));
+                    break;
+
+                case 'page_completed':
+                    const pageData = event.data;
+
+                    console.log('[Frontend] Page completed event data:', pageData);
+
+                    if (pageData) {
+                        // Add completed page to pages array
+                        const newPage: StoryPage = {
+                            pageNumber: pageData.pageNumber,
+                            content: pageData.content,
+                            length: pageData.contentLength,
+                            completedAt: event.timestamp,
+                        };
+
+                        console.log('[Frontend] Adding new page:', newPage.pageNumber, 'Content length:', newPage.content?.length || 0);
+                        console.log('[Frontend] Current pages in state before update:', pages.map(p => p.pageNumber));
+
+                        setPages(prev => {
+                            console.log('[Frontend] setPages called with prev:', prev.map(p => p.pageNumber));
+                            // Replace existing page or add new one
+                            const existingIndex = prev.findIndex(p => p.pageNumber === newPage.pageNumber);
+                            if (existingIndex >= 0) {
+                                const updated = [...prev];
+                                updated[existingIndex] = newPage;
+                                console.log('[Frontend] Replaced existing page. Total pages:', updated.length);
+                                return updated;
+                            } else {
+                                const newPages = [...prev, newPage].sort((a, b) => a.pageNumber - b.pageNumber);
+                                console.log('[Frontend] Added new page. Total pages:', newPages.length, 'Page numbers:', newPages.map(p => p.pageNumber));
+                                return newPages;                        }
+                        });
+
+                        setProgress(prev => ({
+                            ...prev,
+                            completedPages: pageData.completedPages || prev.completedPages,
+                            currentStep: pageData.isStoryComplete ? undefined : 'planning'
+                        }));
+                    } else {
+                        console.log('[Frontend] page_completed event had no data!');
                     }
-                }
-                break;
+                    break;
+
+                case 'story_completed':
+                    console.log('[Frontend] Story completed event:', event.data);
+                    setStatus('completed');
+                    setProgress(prev => ({
+                        ...prev,
+                        currentStep: undefined
+                    }));
+                    break;
+
+                case 'error':
+                    setStatus('failed');
+                    setError(event.data?.error || 'An error occurred during story generation');
+                    break;
+
+                case 'session_state':
+                    // Handle initial session state
+                    if (event.data) {
+                        setStatus(event.data.status);
+                        setProgress(event.data.progress);
+                        if (event.data.error) {
+                            setError(event.data.error);
+                        }
+                    }
+                    break;
         }
-    }, [lastEvent]);
+
+        })
+      
+    }, [events, processedEventIds, pages.length]);
 
     const startGeneration = useCallback(async (prompt: PromptInput) => {
         setIsStarting(true);
@@ -256,6 +270,13 @@ export function useStoryGeneration(): UseStoryGenerationResult {
     const clearError = useCallback(() => {
         setError(null);
     }, []);
+
+    // Cleanup processed events when session changes
+    useEffect(() => {
+        if (sessionId) {
+            setProcessedEventIds(new Set());
+        }
+    }, [sessionId]);
 
     return {
         sessionId,
