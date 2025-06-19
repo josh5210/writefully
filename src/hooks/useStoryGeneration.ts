@@ -69,6 +69,8 @@ export function useStoryGeneration(): UseStoryGenerationResult {
     useEffect(() => {
         if (!lastEvent) return;
 
+        console.log('[Frontend] Processing event:', lastEvent.type, lastEvent);
+
         switch (lastEvent.type) {
             case 'story_started':
                 setStatus('generating');
@@ -118,6 +120,9 @@ export function useStoryGeneration(): UseStoryGenerationResult {
 
             case 'page_completed':
                 const pageData = lastEvent.data;
+
+                console.log('[Frontend] Page completed event data:', pageData);
+
                 if (pageData) {
                     // Add completed page to pages array
                     const newPage: StoryPage = {
@@ -127,16 +132,20 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                         completedAt: lastEvent.timestamp,
                     };
 
+                    console.log('[Frontend] Adding new page:', newPage.pageNumber, 'Content length:', newPage.content?.length || 0);
+
                     setPages(prev => {
                         // Replace existing page or add new one
                         const existingIndex = prev.findIndex(p => p.pageNumber === newPage.pageNumber);
                         if (existingIndex >= 0) {
                             const updated = [...prev];
                             updated[existingIndex] = newPage;
+                            console.log('[Frontend] Replaced existing page. Total pages:', updated.length);
                             return updated;
                         } else {
-                            return [...prev, newPage].sort((a, b) => a.pageNumber - b.pageNumber);
-                        }
+                            const newPages = [...prev, newPage].sort((a, b) => a.pageNumber - b.pageNumber);
+                            console.log('[Frontend] Added new page. Total pages:', newPages.length, 'Page numbers:', newPages.map(p => p.pageNumber));
+                            return newPages;                        }
                     });
 
                     setProgress(prev => ({
@@ -148,6 +157,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                 break;
 
             case 'story_completed':
+                console.log('[Frontend] Story completed event:', lastEvent.data);
                 setStatus('completed');
                 setProgress(prev => ({
                     ...prev,

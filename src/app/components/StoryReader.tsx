@@ -33,11 +33,18 @@ export default function StoryReader({ pages, totalPages, status }: StoryReaderPr
         <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-800">Story Reader</h3>
-                {hasPages && (
-                    <div className="text-sm text-gray-600">
-                        {pages.length} of {totalPages} pages available
-                    </div>
-                )}
+                <div className="flex items-center space-x-4">
+                    {hasPages && (
+                        <div className="text-sm text-gray-600">
+                            {pages.length} of {totalPages} pages available
+                        </div>
+                    )}
+                    {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-gray-500">
+                            Selected: {selectedPage} | Available: [{pages.map(p => p.pageNumber).join(', ')}]
+                        </div>
+                    )}
+                </div>
             </div>
 
             {!hasPages ? (

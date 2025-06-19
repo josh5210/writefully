@@ -81,6 +81,8 @@ export default function Home() {
                             <div>Status: {status}</div>
                             <div>Connected: {isConnected ? 'Yes' : 'No'}</div>
                             <div>Pages: {pages.length}/{progress.totalPages}</div>
+                            <div>Pages in state: {pages.map(p => p.pageNumber).join(', ')}</div>
+                            <div>Completed pages (progress): {progress.completedPages}</div>
                             {connectionError && <div className="text-red-600">Connection Error: {connectionError}</div>}
                         </div>
                     </div>
