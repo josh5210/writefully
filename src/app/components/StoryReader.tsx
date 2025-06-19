@@ -1,6 +1,7 @@
 // /src/app/components/StoryReader.tsx
 
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface StoryPage {
     pageNumber: number;
@@ -123,7 +124,9 @@ export default function StoryReader({ pages, totalPages, status }: StoryReaderPr
                                     <div className="bg-[var(--background)] p-6 rounded-md border border-[var(--border)]/50 
                                                   leading-relaxed text-[var(--foreground)] whitespace-pre-wrap font-serif
                                                   shadow-sm page-turn-effect">
-                                        {currentPage.content}
+                                        <ReactMarkdown>
+                                            {currentPage.content}
+                                        </ReactMarkdown>
                                     </div>
                                 </div>
                             </div>
