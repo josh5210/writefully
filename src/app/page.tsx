@@ -1,8 +1,10 @@
+// /src/app/page.tsx
+
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useStoryGeneration } from '@/hooks/useStoryGeneration';
-import StoryForm from '@/app/components/StoryForm'
+import StoryForm from '@/app/components/StoryForm';
 import ProgressDisplay from '@/app/components/ProgressDisplay';
 import StoryReader from '@/app/components/StoryReader';
 
@@ -18,9 +20,36 @@ export default function Home() {
         startGeneration,
         cancelGeneration,
         clearError,
+        resetState,
         isStarting,
         isCancelling,
     } = useStoryGeneration();
+
+    // State to control form visibility
+    const [showForm, setShowForm] = useState(true);
+
+    // Enhanced start generation that hides the form
+    const handleStartGeneration = useCallback(async (prompt: {
+        topic: string;
+        pages: number;
+        authorStyle?: string;
+        quality: 0 | 1 | 2;
+    }) => {
+        setShowForm(false);
+        await startGeneration(prompt);
+    }, [startGeneration]);
+
+    // Reset everything for a new story
+    const handleCreateNewStory = useCallback(() => {
+        // Reset all state from previous story
+        resetState();
+
+        // Show the form again
+        setShowForm(true);
+    }, [resetState]);
+
+    // Show "Create New Story" button when story is completed or cancelled
+    const shouldShowNewStoryButton = !showForm && (status === 'completed' || status === 'cancelled' || status === 'failed');
 
     return (
         <div className="min-h-[calc(100vh-16rem)]">
@@ -53,17 +82,35 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Story Generation Form */}
-            <div>
-                <StoryForm 
-                    onSubmit={startGeneration}
-                    isLoading={isStarting}
-                    disabled={status === 'generating'}
-                />
-            </div>
+            {/* Story Generation Form - Only show when showForm is true */}
+            {showForm && (
+                <div className="animate-fade-in">
+                    <StoryForm 
+                        onSubmit={handleStartGeneration}
+                        isLoading={isStarting}
+                        disabled={status === 'generating'}
+                    />
+                </div>
+            )}
+
+            {/* Create New Story Button */}
+            {shouldShowNewStoryButton && (
+                <div className="max-w-2xl mx-auto mb-8 animate-fade-in">
+                    <button
+                        onClick={handleCreateNewStory}
+                        className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] 
+                                 py-3 px-4 rounded-md hover:bg-[var(--primary)]/90 
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] 
+                                 focus:ring-offset-2 transition-all duration-300 
+                                 font-serif font-medium page-turn-effect relative overflow-hidden"
+                    >
+                        Create New Story
+                    </button>
+                </div>
+            )}
 
             {/* Progress Display */}
-            {(status !== 'idle' || pages.length > 0) && (
+            {!showForm && (status === 'generating' || pages.length > 0) && (
                 <div className="mt-8 animate-fade-in">
                     <ProgressDisplay
                         status={status}
@@ -90,10 +137,13 @@ export default function Home() {
             {/* Connection Error Banner */}
             {connectionError && !error && (
                 <div className="fixed bottom-4 right-4 max-w-sm animate-slide-up">
-                    <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg p-4 shadow-lg">
-                        <div className="flex items-center space-x-2 text-[var(--muted)]">
-                            <span className="animate-pulse">🔌</span>
-                            <span className="text-sm font-serif">Connection issue: {connectionError}</span>
+                    <div className="bg-[var(--destructive)]/10 backdrop-blur-sm 
+                                  border border-[var(--destructive)]/20 rounded-lg p-4 shadow-lg">
+                        <div className="flex items-center space-x-2">
+                            <span className="text-[var(--destructive)]">⚠️</span>
+                            <span className="text-sm font-serif text-[var(--foreground)]">
+                                {connectionError}
+                            </span>
                         </div>
                     </div>
                 </div>

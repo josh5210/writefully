@@ -44,6 +44,7 @@ export interface UseStoryGenerationResult {
     startGeneration: (prompt: PromptInput) => Promise<void>;
     cancelGeneration: () => Promise<void>;
     clearError: () => void;
+    resetState: () => void;
     
     // Loading states
     isStarting: boolean;
@@ -85,7 +86,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
         );
     }, [events]);
 
-    // Process incoming events - Process all unprocessed events
+    // Process incoming events from the event stream
     useEffect(() => {
         const unprocessedEvents = events.filter(event =>
             !processedEventIds.has(`${event.timestamp}-${event.type}`)
@@ -218,10 +219,32 @@ export function useStoryGeneration(): UseStoryGenerationResult {
         });
     }, [events, processedEventIds]);
 
+    // Reset all state to initial values
+    const resetState = useCallback(() => {
+        setSessionId(null);
+        setStatus('idle');
+        setProgress({
+            currentPage: 0,
+            totalPages: 0,
+            completedPages: 0,
+        });
+        setError(null);
+        setPages([]);
+        setProcessedEventIds(new Set());
+        setIsStarting(false);
+        setIsCancelling(false);     
+    }, []);
+
     const startGeneration = useCallback(async (prompt: PromptInput) => {
+        // Reset all state for new story
+        resetState();
+
         setIsStarting(true);
         setError(null);
         setPages([]);
+        setSessionId(null);
+        setStatus('idle');
+        setProcessedEventIds(new Set());
         setProgress({
             currentPage: 0,
             totalPages: prompt.pages,
@@ -252,7 +275,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
         } finally {
             setIsStarting(false);
         }
-    }, []);
+    }, [resetState]);
 
     const cancelGeneration = useCallback(async () => {
         if (!sessionId) return;
@@ -298,6 +321,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
         startGeneration,
         cancelGeneration,
         clearError,
+        resetState,
         isStarting,
         isCancelling,
     };
