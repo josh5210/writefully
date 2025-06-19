@@ -40,32 +40,40 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
         2: 'High Quality (2 revisions)'
     };
 
+
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Generate Your Story</h2>
+        <div className="max-w-2xl mx-auto p-6 bg-[var(--card)] rounded-lg shadow-lg texture-overlay transition-all duration-300">
+            <h2 className="text-2xl font-serif font-bold mb-6 text-[var(--card-foreground)]">
+                Craft Your Story
+            </h2>
             
             <div className="space-y-6">
                 {/* Topic Input */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Story Topic *
+                    <label className="block text-sm font-medium text-[var(--card-foreground)] mb-2">
+                        What shall we write about? *
                     </label>
                     <textarea
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        placeholder="What should your story be about? Be as specific or general as you like..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="A tale of adventure, mystery, or wonder..."
+                        className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
+                                 bg-[var(--input)] text-[var(--foreground)]
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent 
+                                 resize-none transition-all duration-200 font-serif"
                         rows={3}
                         maxLength={500}
                         disabled={disabled}
                     />
-                    <p className="text-xs text-gray-500 mt-1">{topic.length}/500 characters</p>
+                    <p className="text-xs text-[var(--muted)] mt-1 font-serif italic">
+                        {topic.length}/500 characters
+                    </p>
                 </div>
 
                 {/* Pages Input */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Number of Pages
+                    <label className="block text-sm font-medium text-[var(--card-foreground)] mb-2">
+                        Length of your tale
                     </label>
                     <input
                         type="number"
@@ -73,47 +81,68 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                         onChange={(e) => setPages(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
                         min="1"
                         max="50"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
+                                 bg-[var(--input)] text-[var(--foreground)]
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent
+                                 transition-all duration-200"
                         disabled={disabled}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Each page is approximately 300-400 words</p>
+                    <p className="text-xs text-[var(--muted)] mt-1 font-serif italic">
+                        Each page unfolds approximately 300-400 words
+                    </p>
                 </div>
 
                 {/* Author Style Input */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Author Style (Optional)
+                    <label className="block text-sm font-medium text-[var(--card-foreground)] mb-2">
+                        In the style of... (Optional)
                     </label>
                     <input
                         type="text"
                         value={authorStyle}
                         onChange={(e) => setAuthorStyle(e.target.value)}
-                        placeholder="e.g., Ernest Hemingway, J.K. Rowling, Isaac Asimov..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Hemingway, Austen, Tolkien..."
+                        className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
+                                 bg-[var(--input)] text-[var(--foreground)]
+                                 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent
+                                 transition-all duration-200"
                         disabled={disabled}
                     />
-                    <p className="text-xs text-gray-500 mt-1">Leave blank for original style</p>
+                    <p className="text-xs text-[var(--muted)] mt-1 font-serif italic">
+                        Leave blank for an original voice
+                    </p>
                 </div>
 
                 {/* Quality Selection */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                        Quality Level
+                    <label className="block text-sm font-medium text-[var(--card-foreground)] mb-3">
+                        Craft Quality
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         {[0, 1, 2].map((level) => (
-                            <div key={level} className="flex items-center cursor-pointer" onClick={() => setQuality(level as 0 | 1 | 2)}>
-                                <div className={`w-4 h-4 rounded-full border-2 mr-3 ${quality === level ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
-                                    {quality === level && <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>}
+                            <div 
+                                key={level} 
+                                className="flex items-center cursor-pointer p-3 rounded-md
+                                         hover:bg-[var(--secondary)]/10 transition-colors duration-200" 
+                                onClick={() => setQuality(level as 0 | 1 | 2)}
+                            >
+                                <div className={`w-4 h-4 rounded-full border-2 mr-3 transition-all duration-200 ${
+                                    quality === level 
+                                        ? 'bg-[var(--primary)] border-[var(--primary)]' 
+                                        : 'border-[var(--border)]'
+                                }`}>
+                                    {quality === level && (
+                                        <div className="w-2 h-2 bg-[var(--primary-foreground)] rounded-full m-0.5"></div>
+                                    )}
                                 </div>
-                                <span className="text-sm text-gray-700">
+                                <span className="text-sm text-[var(--card-foreground)] font-serif">
                                     {qualityLabels[level as keyof typeof qualityLabels]}
                                 </span>
                             </div>
                         ))}
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                        Higher quality takes longer but produces better results through critique and editing cycles
+                    <p className="text-xs text-[var(--muted)] mt-2 font-serif italic">
+                        Higher quality involves more rounds of refinement
                     </p>
                 </div>
 
@@ -121,15 +150,21 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                 <button
                     onClick={handleSubmit}
                     disabled={!topic.trim() || disabled || isLoading}
-                    className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="w-full bg-[var(--primary)] text-[var(--primary-foreground)] 
+                             py-3 px-4 rounded-md hover:bg-[var(--primary)]/90 
+                             focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 
+                             disabled:opacity-50 disabled:cursor-not-allowed 
+                             transition-all duration-300 font-serif font-medium
+                             page-turn-effect relative overflow-hidden"
                 >
                     {isLoading ? (
                         <div className="flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Starting Generation...
+                            <div className="w-5 h-5 border-2 border-[var(--primary-foreground)] 
+                                          border-t-transparent rounded-full mr-2 generating-pulse"></div>
+                            Crafting your story...
                         </div>
                     ) : (
-                        'Generate Story'
+                        'Begin Writing'
                     )}
                 </button>
             </div>

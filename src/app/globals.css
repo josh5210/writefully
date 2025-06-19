@@ -1,26 +1,141 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color palette */
+  --magnolia: #f7f0f5;
+  --dun: #decbb7;
+  --battleship-gray: #8f857d;
+  --walnut-brown: #5c5552;
+  --van-dyke: #433633;
+
+  /* Light mode (default) */
+  --background: #fdf6e9;
+  --foreground: var(--van-dyke);
+  --card: var(--magnolia);
+  --card-foreground: var(--walnut-brown);
+  --primary: var(--walnut-brown);
+  --primary-foreground: var(--magnolia);
+  --secondary: var(--dun);
+  --secondary-foreground: var(--van-dyke);
+  --muted: var(--battleship-gray);
+  --muted-foreground: var(--van-dyke);
+  --accent: var(--battleship-gray);
+  --accent-foreground: var(--magnolia);
+  --destructive: #dc2626;
+  --destructive-foreground: var(--magnolia);
+  --border: var(--dun);
+  --input: #ffffff;
+  --ring: var(--battleship-gray);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  /* Dark mode */
+  --background: var(--van-dyke);
+  --foreground: var(--magnolia);
+  --card: #1a1614;
+  --card-foreground: var(--dun);
+  --primary: var(--dun);
+  --primary-foreground: var(--van-dyke);
+  --secondary: var(--walnut-brown);
+  --secondary-foreground: var(--magnolia);
+  --muted: var(--battleship-gray);
+  --muted-foreground: var(--dun);
+  --accent: var(--battleship-gray);
+  --accent-foreground: var(--magnolia);
+  --destructive: #ef4444;
+  --destructive-foreground: var(--magnolia);
+  --border: var(--battleship-gray);
+  --input: #2a2220;
+  --ring: var(--dun);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base styles */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Literata", "Palatino", "Georgia", serif;
+}
+
+/* Custom utility classes */
+.page-turn-effect {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.page-turn-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%);
+  transform: translateX(-100%) skewX(-45deg);
+  transition: transform 0.5s ease-out;
+}
+
+.page-turn-effect:hover::before {
+  transform: translateX(100%) skewX(-45deg);
+}
+
+/* Paper texture overlay for light mode */
+.texture-overlay {
+  position: relative;
+}
+
+.texture-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAANASURBVGhD7ZlNSFRRFMfPa2QmmYpmQQulEbVIKKKFH0GLoIJo0aZdEUREQR+bFkEfBBUtWrQo+ti5KFpYVC6KSoook0pl1MxvJUlNOvN6/uf5Zjz3vXvfe2ObkfnBn5n3ce695553zr3nPhuJjTGM4lHidwvGWB/YCXaCLWAlWAYmwXfwEbwGz0G/f3RxKIYQE1wBDoEDIO1wjGuwHnAXPAR/Hd6CIkJIDgToDPKxHgy7LvDZ4dkayjmHchYSA9QYtN4lFOwHNdBO0CGQ+hpuuAF43gZw1OElGbxC0OIUgS2vsTKbvQRc81ssXkPDTWD4t6Dk2IQgw66As6BPMRUNvqOW7vFLOTxCaCpH4K9Sq+Dh0IFLKtfbckA3vRf+M6i5J1BRzHI5sDqCKYXjcABwA90MLnsM2A1e+CUZViF2wWFCqbYO6K5hhJQdhZWIY7pxzaJ2Lro5lSxk1iXElsUmxYjGO+DhWbbZl+ESkgVhQr0vgROIHkJsK/qk4hJim2ysNMNKCuAyc49JoaueuZZVUVjNUQPf0KYYQnGwJuB022l1xb+UoEX+JdugXDU1cWIVUqsYbHCYMB32ahjNW61ZiDXdCAIzaSsiE/QYzUIWKEZQsGWZNM2Uacp/LlXMQmYpRlDMVYzZNKV7NJ0gM/BsNAuxrh59sMuSXdPJf2IWwvKV5csoGcL0NP+JWQgbF9ZgUSTY9TA21JKI2a/G1WkYVozZYJzGBGy+XCdGm+aliiEUdU2KIYNtNW0WN80sZEgxgqJZMWTwHj0mIfBpMSUOA3QRwVVYmJ1acwDyf4KD/hNBTCrGXORcQuTuXhBc9C8l0PXZvvGdYKh3wGVKWgnLVf7VMvvAk2CZYvvocAlhUEWfZrtiznNa8AJRpKNg7hI3rNQ1bMsOFy4hJAsOmkpQ0X8e5Pn3hnQBbK1RsP+GjYrRPe+Bn8+AhaCOHfBbWojgxgTvYHurz8JqKS0eXWKuBl3goV+aD68QkoOA9kCV5fU4HKDQ3YD+06CdWdmRLTjNUJvmn1QCfEt/sSDo7QFHA4qqAbnPBSX9P2YE8APo/x8H9t+MRv4BnXkCoXgWrPIAAAAASUVORK5CYII=");
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dark .texture-overlay::after {
+  display: none;
+}
+
+/* Animations */
+@keyframes pageAppear {
+  0% { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-appear {
+  animation: pageAppear 0.5s ease-out forwards;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.generating-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Tailwind theme extension */
+@theme {
+  --color-magnolia: var(--magnolia);
+  --color-dun: var(--dun);
+  --color-battleship: var(--battleship-gray);
+  --color-walnut: var(--walnut-brown);
+  --color-vandyke: var(--van-dyke);
+  --font-serif: "Literata", "Palatino", "Georgia", serif;
 }
