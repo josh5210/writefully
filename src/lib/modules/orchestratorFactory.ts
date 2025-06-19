@@ -10,8 +10,11 @@ import { PromptHandler } from "./promptHandler";
 import { StoryPlanner } from "./storyPlanner";
 import { Writer } from "./writer";
 
+interface OrchestratorWithModules extends Orchestrator {
+    getModules: () => [StoryPlanner, PagePlanner, Writer, Critic, Editor];
+}
 
-export function createOrchestrator(): Orchestrator {
+export function createOrchestrator(): OrchestratorWithModules {
     try {
         const llmConfig = createLlmConfig();
 
@@ -25,7 +28,13 @@ export function createOrchestrator(): Orchestrator {
         const critic = new Critic(llmClient, promptHandler);
         const editor = new Editor(llmClient, promptHandler);
 
-        return new Orchestrator(storyPlanner, pagePlanner, writer, critic, editor);
+        const orchestrator = new Orchestrator(storyPlanner, pagePlanner, writer, critic, editor);
+
+        // Expose modules for DatabaseOrchestrator
+        const orchestratorWithModules = orchestrator as OrchestratorWithModules;
+        orchestratorWithModules.getModules = () => [storyPlanner, pagePlanner, writer, critic, editor];
+  
+        return orchestratorWithModules;
 
     } catch (error) {
         console.error('Failed to create orchestrator:', error);

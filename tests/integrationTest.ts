@@ -88,11 +88,11 @@ export async function testStoryGeneration() {
 
 
         // Test 5: Get active generations
-        console.log(`\n Step 5: Active generations...`);
-        const activeGenerations = storyService.getActiveGenerations();
-        console.log(`Active generations: ${activeGenerations.length}`);
+        // console.log(`\n Step 5: Active generations...`);
+        // const activeGenerations = storyService.getActiveGenerations();
+        // console.log(`Active generations: ${activeGenerations.length}`);
 
-        console.log('\n Integration test completed!');
+        // console.log('\n Integration test completed!');
 
     } catch (error) {
         console.error('Integration test failed:', error);

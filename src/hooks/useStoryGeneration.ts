@@ -2,14 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useEventStream } from './useEventStream';
-
-
-interface PromptInput {
-    topic: string;
-    pages: number;
-    authorStyle?: string;
-    quality: 0 | 1 | 2;
-}
+import { PromptInput } from '@/lib/types';
 
 interface SessionProgress {
     currentPage: number;

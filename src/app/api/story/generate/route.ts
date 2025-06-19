@@ -1,10 +1,7 @@
-// /src/app/api/story/generate/route.ts
-
+// src/app/api/story/generate/route.ts
 import { storyService } from "@/lib/services/storyService";
-import { sessionManager } from "@/lib/session/sessionManager";
 import { PromptInput, StartStoryResponse } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
-
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
     // Validate the request body
@@ -52,19 +49,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             readerVoice: typeof body.readerVoice === 'string' ? body.readerVoice.trim() : undefined,
         };
 
-        // Create session using session manager
-        const session = sessionManager.createSession({ prompt });
+        // Create story session in database
+        const session = await storyService.createStorySession(prompt);
 
         // Start story generation using story service
         try {
             await storyService.startGeneration(session.sessionId);
         } catch (error) {
             console.error('Failed to start story generation:', error);
-
-            // Update session status to failed
-            sessionManager.setStatus(session.sessionId, 'failed',
-                error instanceof Error ? error.message : 'Unknown error'
-            );
 
             return NextResponse.json(
                 { error: 'Failed to start story generation' },
@@ -75,21 +67,33 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         console.log(`Story generation initiated for session ${session.sessionId}`);
         console.log(`Topic "${prompt.topic}", Pages: ${prompt.pages}, Quality: ${prompt.quality}`);
 
-        // Return response
+        // Return response with polling URLs
         const response: StartStoryResponse = {
             sessionId: session.sessionId,
             storyId: session.storyId,
             status: session.status,
             message: 'Story generation started successfully',
-            progress: session.progress,
+            progress: {
+                currentPage: 0,
+                totalPages: prompt.pages,
+                completedPages: 0,
+                currentStep: 'planning'
+            },
         };
 
-        return NextResponse.json(response, { status: 201 });
+        // Add polling URLs for convenience
+        const responseWithUrls = {
+            ...response,
+            pollUrl: `/api/story/${session.sessionId}/status`,
+            pagesUrl: `/api/story/${session.sessionId}/pages`
+        };
+
+        return NextResponse.json(responseWithUrls, { status: 201 });
 
     } catch (error) {
-        console.error('Error getting session status', error);
+        console.error('Error in story generation endpoint:', error);
         return NextResponse.json(
-            { error: 'Failed to get session status' },
+            { error: 'Failed to process story generation request' },
             { status: 500 }
         );
     }
