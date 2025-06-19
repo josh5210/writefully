@@ -63,13 +63,21 @@ export function useStoryGeneration(): UseStoryGenerationResult {
     const [isCancelling, setIsCancelling] = useState(false);
 
     // Use event stream hook
-    const { isConnected, error: connectionError, lastEvent } = useEventStream(sessionId);
+    const { isConnected, error: connectionError, lastEvent, events } = useEventStream(sessionId);
+
+    // Debug: Log all events received
+    useEffect(() => {
+        console.log('[Frontend] Total events received:', events.length);
+        const pageCompletedEvents = events.filter(e => e.type === 'page_completed');
+        console.log('[Frontend] Page completed events received:', pageCompletedEvents.length, pageCompletedEvents.map(e => e.data?.pageNumber));
+    }, [events]);
 
     // Process incoming events
     useEffect(() => {
         if (!lastEvent) return;
 
         console.log('[Frontend] Processing event:', lastEvent.type, lastEvent);
+        console.log('[Frontend] Event timestamp:', lastEvent.timestamp, 'Current pages count:', pages.length);
 
         switch (lastEvent.type) {
             case 'story_started':
@@ -133,8 +141,10 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                     };
 
                     console.log('[Frontend] Adding new page:', newPage.pageNumber, 'Content length:', newPage.content?.length || 0);
+                    console.log('[Frontend] Current pages in state before update:', pages.map(p => p.pageNumber));
 
                     setPages(prev => {
+                        console.log('[Frontend] setPages called with prev:', prev.map(p => p.pageNumber));
                         // Replace existing page or add new one
                         const existingIndex = prev.findIndex(p => p.pageNumber === newPage.pageNumber);
                         if (existingIndex >= 0) {
@@ -153,6 +163,8 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                         completedPages: pageData.completedPages || prev.completedPages,
                         currentStep: pageData.isStoryComplete ? undefined : 'planning'
                     }));
+                } else {
+                    console.log('[Frontend] page_completed event had no data!');
                 }
                 break;
 

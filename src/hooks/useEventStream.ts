@@ -63,7 +63,7 @@ export function useEventStream(sessionId: string | null): UseEventStreamResult {
             eventSource.onmessage = (event) => {
                 try {
                     const parsedEvent: StreamEvent = JSON.parse(event.data);
-                    console.log(`[SSE] Received event:`, parsedEvent.type);
+                    console.log(`[SSE] Received event:`, parsedEvent.type, parsedEvent.type === 'page_completed' ? `Page ${parsedEvent.data?.pageNumber || '?'}` : '');
                     
                     setEvents(prev => [...prev, parsedEvent]);
                     setLastEvent(parsedEvent);
