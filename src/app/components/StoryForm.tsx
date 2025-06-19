@@ -51,7 +51,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                 {/* Topic Input */}
                 <div>
                     <label className="block text-sm font-medium text-[var(--card-foreground)] mb-2">
-                        What shall we write about? *
+                        What shall we write about?
                     </label>
                     <textarea
                         value={topic}
@@ -73,7 +73,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                 {/* Pages Input */}
                 <div>
                     <label className="block text-sm font-medium text-[var(--card-foreground)] mb-2">
-                        Length of your tale
+                        How many pages?
                     </label>
                     <input
                         type="number"
@@ -88,7 +88,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                         disabled={disabled}
                     />
                     <p className="text-xs text-[var(--muted)] mt-1 font-serif italic">
-                        Each page unfolds approximately 300-400 words
+                        Each page is approximately 300-400 words
                     </p>
                 </div>
 
@@ -101,7 +101,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                         type="text"
                         value={authorStyle}
                         onChange={(e) => setAuthorStyle(e.target.value)}
-                        placeholder="Hemingway, Austen, Tolkien..."
+                        placeholder="Mark Twain, Dr. Seuss, Tolkien..."
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
                                  bg-[var(--input)] text-[var(--foreground)]
                                  focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent
