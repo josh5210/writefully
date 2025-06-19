@@ -1,7 +1,8 @@
 // /src/hooks/useStoryGeneration.ts
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useEventStream } from './useEventStream';
+
 
 interface PromptInput {
     topic: string;
@@ -64,13 +65,24 @@ export function useStoryGeneration(): UseStoryGenerationResult {
     const [processedEventIds, setProcessedEventIds] = useState<Set<string>>(new Set());
 
     // Use event stream hook
-    const { isConnected, error: connectionError, lastEvent, events } = useEventStream(sessionId);
+    const { isConnected, error: connectionError, events } = useEventStream(sessionId);
+
+    // Add ref to track pages for logging without causing effect re-runs
+    const pagesRef = useRef(pages);
+    pagesRef.current = pages;
 
     // Debug: Log all events received
     useEffect(() => {
         console.log('[Frontend] Total events received:', events.length);
         const pageCompletedEvents = events.filter(e => e.type === 'page_completed');
-        console.log('[Frontend] Page completed events received:', pageCompletedEvents.length, pageCompletedEvents.map(e => e.data?.pageNumber));
+        console.log('[Frontend] Page completed events received:', pageCompletedEvents.length, 
+            pageCompletedEvents.map(e => {
+                if (e.type === 'page_completed') {
+                    return e.data.pageNumber;
+                }
+                return undefined;
+            }).filter(Boolean)
+        );
     }, [events]);
 
     // Process incoming events - Process all unprocessed events
@@ -85,7 +97,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
 
         unprocessedEvents.forEach(event => {
             console.log('[Frontend] Processing event:', event.type, event);
-            console.log('[Frontend] Event timestamp:', event.timestamp, 'Current pages count:', pages.length);
+            console.log('[Frontend] Event timestamp:', event.timestamp, 'Current pages count:', pagesRef.current.length);
 
             // Mark as processed
             setProcessedEventIds(prev => new Set(prev).add(`${event.timestamp}-${event.type}`));
@@ -95,7 +107,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                     setStatus('generating');
                     setProgress(prev => ({
                         ...prev,
-                        totalPages: event.data?.totalPages || prev.totalPages,
+                        totalPages: event.data.totalPages,
                         currentStep: 'planning'
                     }));
                     break;
@@ -110,7 +122,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                 case 'page_plan_created':
                     setProgress(prev => ({
                         ...prev,
-                        currentPage: event.data?.pageNumber || prev.currentPage,
+                        currentPage: event.data.pageNumber,
                         currentStep: 'planning'
                     }));
                     break;
@@ -118,7 +130,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                 case 'page_content_created':
                     setProgress(prev => ({
                         ...prev,
-                        currentPage: event.data?.pageNumber || prev.currentPage,
+                        currentPage: event.data.pageNumber,
                         currentStep: 'writing'
                     }));
                     break;
@@ -152,7 +164,7 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                         };
 
                         console.log('[Frontend] Adding new page:', newPage.pageNumber, 'Content length:', newPage.content?.length || 0);
-                        console.log('[Frontend] Current pages in state before update:', pages.map(p => p.pageNumber));
+                        console.log('[Frontend] Current pages in state before update:', pagesRef.current.map(p => p.pageNumber));
 
                         setPages(prev => {
                             console.log('[Frontend] setPages called with prev:', prev.map(p => p.pageNumber));
@@ -166,7 +178,8 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                             } else {
                                 const newPages = [...prev, newPage].sort((a, b) => a.pageNumber - b.pageNumber);
                                 console.log('[Frontend] Added new page. Total pages:', newPages.length, 'Page numbers:', newPages.map(p => p.pageNumber));
-                                return newPages;                        }
+                                return newPages;
+                            }
                         });
 
                         setProgress(prev => ({
@@ -180,7 +193,6 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                     break;
 
                 case 'story_completed':
-                    console.log('[Frontend] Story completed event:', event.data);
                     setStatus('completed');
                     setProgress(prev => ({
                         ...prev,
@@ -189,25 +201,22 @@ export function useStoryGeneration(): UseStoryGenerationResult {
                     break;
 
                 case 'error':
+                    setError(event.message || 'An error occurred during story generation');
                     setStatus('failed');
-                    setError(event.data?.error || 'An error occurred during story generation');
                     break;
 
+                // Handle other event types that don't affect state
+                case 'connection':
                 case 'session_state':
-                    // Handle initial session state
-                    if (event.data) {
-                        setStatus(event.data.status);
-                        setProgress(event.data.progress);
-                        if (event.data.error) {
-                            setError(event.data.error);
-                        }
-                    }
+                case 'heartbeat':
+                    // These events don't require state updates
                     break;
-        }
 
-        })
-      
-    }, [events, processedEventIds, pages.length]);
+                default:
+                    console.warn('[Frontend] Unknown event type.');
+            }
+        });
+    }, [events, processedEventIds]);
 
     const startGeneration = useCallback(async (prompt: PromptInput) => {
         setIsStarting(true);

@@ -1,14 +1,7 @@
 // /src/hooks/useEventStream.ts
 
-import { useEffect, useRef, useState } from 'react';
-
-export interface StreamEvent {
-    type: string;
-    sessionId: string;
-    timestamp: string;
-    data?: any;
-    message?: string;
-}
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { StreamEvent } from '@/lib/types';
 
 export interface UseEventStreamResult {
     isConnected: boolean;
@@ -41,7 +34,7 @@ export function useEventStream(sessionId: string | null): UseEventStreamResult {
         }
     };
 
-    const connect = () => {
+    const connect = useCallback(() => {
         if (!sessionId) return;
 
         cleanup();
@@ -63,8 +56,14 @@ export function useEventStream(sessionId: string | null): UseEventStreamResult {
             eventSource.onmessage = (event) => {
                 try {
                     const parsedEvent: StreamEvent = JSON.parse(event.data);
-                    console.log(`[SSE] Received event:`, parsedEvent.type, parsedEvent.type === 'page_completed' ? `Page ${parsedEvent.data?.pageNumber || '?'}` : '');
-                    
+
+                    // Type-safe logging based on event type
+                    if (parsedEvent.type === 'page_completed') {
+                        console.log(`[SSE] Received event:`, parsedEvent.type, `Page ${parsedEvent.data.pageNumber}`);
+                    } else {
+                        console.log(`[SSE] Received event:`, parsedEvent.type);
+                    }
+
                     setEvents(prev => [...prev, parsedEvent]);
                     setLastEvent(parsedEvent);
                 } catch (err) {
@@ -98,7 +97,7 @@ export function useEventStream(sessionId: string | null): UseEventStreamResult {
             setError('Failed to create connection');
             setConnectionState('error');
         }
-    };
+    }, [sessionId]);
 
     // Connect when sessionId changes
     useEffect(() => {
@@ -114,7 +113,7 @@ export function useEventStream(sessionId: string | null): UseEventStreamResult {
         }
 
         return cleanup;
-    }, [sessionId]);
+    }, [sessionId, connect]);
 
     // Cleanup on unmount
     useEffect(() => {

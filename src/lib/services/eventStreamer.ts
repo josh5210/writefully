@@ -1,17 +1,12 @@
 // /src/lib/services/eventStreamer.ts
 
+import type { GenericStreamEvent } from "../types";
 
-export interface StreamEvent {
-    type: string;
-    sessionId: string;
-    timestamp: string;
-    data?: unknown;
-    message?: string;
-}
+type SSEController = ReadableStreamDefaultController<Uint8Array>;
 
 
 export class EventStreamer {
-    private clients = new Map<string, ReadableStreamDefaultController<any>>();
+    private clients = new Map<string, SSEController>();
     private heartbeatInterval: NodeJS.Timeout | null = null;
     private readonly HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
 
@@ -23,7 +18,7 @@ export class EventStreamer {
     /**
      * Add a client connection for a session
      */
-    addClient(sessionId: string, controller: ReadableStreamDefaultController<any>): void {
+    addClient(sessionId: string, controller: SSEController): void {
         // Remove existing client if present (handles reconnections)
         if (this.clients.has(sessionId)) {
             console.log(`[EventStreamer] Replacing existing client for session ${sessionId}`);
@@ -43,7 +38,7 @@ export class EventStreamer {
         if (controller) {
             try {
                 controller.close();
-            } catch (error) {
+            } catch {
                 // Controller might already be closed
                 console.log(`[EventStreamer] Controller already closed for session ${sessionId}`);
             }
@@ -56,14 +51,14 @@ export class EventStreamer {
     /**
      * Broadcast an event to a specific session
      */
-    broadcastToSession(sessionId: string, event: Omit<StreamEvent, 'sessionId' | 'timestamp'>): void {
+    broadcastToSession(sessionId: string, event: Omit<GenericStreamEvent, 'sessionId' | 'timestamp'>): void {
         const controller = this.clients.get(sessionId);
         if (!controller) {
             console.log(`[EventStreamer] No client found for session ${sessionId}`);
             return;
         }
 
-        const fullEvent: StreamEvent = {
+        const fullEvent: GenericStreamEvent = {
             ...event,
             sessionId,
             timestamp: new Date().toISOString(),
@@ -87,7 +82,7 @@ export class EventStreamer {
     /**
      * Broadcast to all connected clients (for system-wide events)
      */
-    broadcastToAll(event: Omit<StreamEvent, 'sessionId' | 'timestamp'>): void {
+    broadcastToAll(event: Omit<GenericStreamEvent, 'sessionId' | 'timestamp'>): void {
         const sessions = Array.from(this.clients.keys());
         console.log(`[EventStreamer] Broadcasting to ${sessions.length} clients:`, event.type);
 
