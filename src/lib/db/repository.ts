@@ -58,6 +58,10 @@ export class DatabaseRepository {
     completedPages?: number;
     currentStep?: DbStory['current_step'];
     storyPlan?: string;
+    storyStructure?: string;
+    storyCharacters?: string;
+    storySettings?: string;
+    storyNarrative?: string;
   }): Promise<boolean> {
     const setParts: string[] = ['updated_at = NOW()'];
     const values: unknown[] = [storyId];
@@ -84,6 +88,30 @@ export class DatabaseRepository {
     if (updates.storyPlan !== undefined) {
       setParts.push(`story_plan = $${paramCount}::TEXT`);
       values.push(updates.storyPlan);
+      paramCount++;
+    }
+
+    if (updates.storyStructure !== undefined) {
+      setParts.push(`story_structure = $${paramCount}::TEXT`);
+      values.push(updates.storyStructure);
+      paramCount++;
+    }
+
+    if (updates.storyCharacters !== undefined) {
+      setParts.push(`story_characters = $${paramCount}::TEXT`);
+      values.push(updates.storyCharacters);
+      paramCount++;
+    }
+
+    if (updates.storySettings !== undefined) {
+      setParts.push(`story_settings = $${paramCount}::TEXT`);
+      values.push(updates.storySettings);
+      paramCount++;
+    }
+
+    if (updates.storyNarrative !== undefined) {
+      setParts.push(`story_narrative = $${paramCount}::TEXT`);
+      values.push(updates.storyNarrative);
       paramCount++;
     }
 

@@ -29,24 +29,32 @@ export class PagePlanner {
         const userPrompt = this.promptHandler.createPagePlannerUserPrompt(prompt, pageContext, previousPagePlans);
 
         try {
-            const response = await this.apiClient.generateContent(userPrompt, systemPrompt);
+            console.log(`[PagePlanner] Planning page ${pageContext.currentPageIndex + 1} of ${prompt.pages}`);
+            
+            // Use pageGeneration operation type for page planning with backup fallback
+            const response = await this.apiClient.generateContentWithFallback(
+                userPrompt, 
+                systemPrompt, 
+                'pageGeneration'
+            );
+
+            console.log(`[PagePlanner] Page ${pageContext.currentPageIndex + 1} planning completed, plan length: ${response.content.length} characters`);
 
             // Show response if extended debugging enabled
             if (process.env.EXTENDED_DEBUG === 'true') {
-                console.log(`\nPage Planner repsonse for page ${pageContext.currentPageIndex + 1 }: \n\n${response.content}`);
+                console.log(`\nPage Planner response for page ${pageContext.currentPageIndex + 1}: \n\n${response.content}`);
             }
 
             return response.content;
         } catch (error) {
-            console.error(
-                `Error planning page ${pageContext.currentPageIndex + 1}:`,
-                error instanceof Error ? error.message : String(error)
-            );
-            throw new Error(
-                `Failed to plan page ${pageContext.currentPageIndex + 1}: ${
-                    error instanceof Error ? error.message : String(error)
-                }`
-            );
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`[PagePlanner] Error planning page ${pageContext.currentPageIndex + 1}:`, errorMessage);
+            
+            if (errorMessage.includes('timed out')) {
+                console.error(`[PagePlanner] Page planning timed out - may indicate model performance issues`);
+            }
+            
+            throw new Error(`Failed to plan page ${pageContext.currentPageIndex + 1}: ${errorMessage}`);
         }
     }
 }

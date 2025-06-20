@@ -27,7 +27,16 @@ export class Critic {
         const userPrompt = this.promptHandler.createCriticUserPrompt(content.text, originalPrompt, pageContext);
 
         try {
-            const response = await this.apiClient.generateContent(userPrompt, systemPrompt);
+            console.log(`[Critic] Evaluating content for page ${pageContext ? pageContext.currentPageIndex + 1 : 'unknown'}`);
+            
+            // Use default operation type with backup fallback
+            const response = await this.apiClient.generateContentWithFallback(
+                userPrompt, 
+                systemPrompt, 
+                'default'
+            );
+
+            console.log(`[Critic] Content evaluation completed, critique length: ${response.content.length} characters`);
 
             // Show the response if we want extended debugging
             if (process.env.EXTENDED_DEBUG === 'true') {
@@ -36,7 +45,12 @@ export class Critic {
 
             return response.content;
         } catch (error) {
-            console.error('Error evaluating content:', error instanceof Error ? error.message : String(error));
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`[Critic] Content evaluation failed:`, errorMessage);
+
+            if (errorMessage.includes('timed out')) {
+                console.error(`[Critic] Content evaluation timed out - may indicate model performance issues`);
+            }
 
             // Return a simple critique to avoid blocking story generation
             return "Unable to generate detailed critique at this time.";

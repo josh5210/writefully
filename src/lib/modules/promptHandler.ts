@@ -47,6 +47,183 @@ export class PromptHandler {
         return userPrompt;
     }
 
+    /**
+     * Tiered Story Planning Prompts - Breaking down story planning into smaller, faster tasks
+     */
+
+    // 1. Story Structure and Outline
+    createStoryStructureSystemPrompt(prompt: PromptInput): string {
+        let systemPrompt = `You are a story structure expert. Your task is to create a clear, compelling narrative structure for a story.
+            
+            Focus specifically on:
+            - Overall story arc (beginning, middle, end)
+            - Key plot points and turning moments
+            - Narrative flow and pacing for ${prompt.pages} pages
+            - Story progression and momentum`;
+
+        if (prompt.authorStyle) {
+            systemPrompt += `\n\nStructure the story in the style of ${prompt.authorStyle}, considering their typical narrative approach and pacing.`;
+        }
+
+        systemPrompt += `\n\nProvide a concise but complete structural outline that covers the essential story framework.`;
+
+        return systemPrompt;
+    }
+
+    createStoryStructureUserPrompt(prompt: PromptInput): string {
+        let userPrompt = `Create a structural outline for a ${prompt.pages}-page story about "${prompt.topic}"`;
+        
+        if (prompt.authorStyle) {
+            userPrompt += ` in the style of ${prompt.authorStyle}`;
+        }
+        
+        userPrompt += `.\n\nProvide:
+        - Beginning: Setup and inciting incident
+        - Middle: Key developments and conflicts
+        - End: Climax and resolution
+        - Overall narrative arc and pacing`;
+
+        return userPrompt;
+    }
+
+    // 2. Character Development
+    createCharacterDevelopmentSystemPrompt(prompt: PromptInput): string {
+        let systemPrompt = `You are a character development specialist. Your task is to create compelling, well-defined characters for a story.
+            
+            Focus on:
+            - Main characters and their core traits
+            - Character motivations and goals
+            - Character relationships and dynamics
+            - Character arcs and development throughout the story`;
+
+        if (prompt.authorStyle) {
+            systemPrompt += `\n\nDevelop characters in the style of ${prompt.authorStyle}, considering their typical character archetypes and development patterns.`;
+        }
+
+        systemPrompt += `\n\nCreate characters that will drive the narrative effectively across ${prompt.pages} pages.`;
+
+        return systemPrompt;
+    }
+
+    createCharacterDevelopmentUserPrompt(prompt: PromptInput, storyStructure: string): string {
+        let userPrompt = `Based on this story structure, create detailed character profiles for a story about "${prompt.topic}"`;
+        
+        if (prompt.authorStyle) {
+            userPrompt += ` in the style of ${prompt.authorStyle}`;
+        }
+        
+        userPrompt += `.\n\nSTORY STRUCTURE:\n${storyStructure}\n\nProvide:
+        - Main character profiles with motivations and traits
+        - Key supporting characters
+        - Character relationships and conflicts
+        - How characters evolve throughout the story`;
+
+        return userPrompt;
+    }
+
+    // 3. Setting and World-building
+    createSettingDevelopmentSystemPrompt(prompt: PromptInput): string {
+        let systemPrompt = `You are a setting and world-building expert. Your task is to create vivid, immersive environments for a story.
+            
+            Focus on:
+            - Key locations and environments
+            - Atmosphere and mood
+            - Time period and context
+            - How settings support the narrative`;
+
+        if (prompt.authorStyle) {
+            systemPrompt += `\n\nDevelop settings in the style of ${prompt.authorStyle}, considering their typical environmental descriptions and atmospheric elements.`;
+        }
+
+        systemPrompt += `\n\nCreate settings that enhance the story and can be effectively described across ${prompt.pages} pages.`;
+
+        return systemPrompt;
+    }
+
+    createSettingDevelopmentUserPrompt(prompt: PromptInput, storyStructure: string, characters: string): string {
+        let userPrompt = `Based on this story structure and characters, create detailed setting descriptions for a story about "${prompt.topic}"`;
+        
+        if (prompt.authorStyle) {
+            userPrompt += ` in the style of ${prompt.authorStyle}`;
+        }
+        
+        userPrompt += `.\n\nSTORY STRUCTURE:\n${storyStructure}\n\nCHARACTERS:\n${characters}\n\nProvide:
+        - Key locations and their significance
+        - Atmospheric details and mood
+        - Time period and cultural context
+        - How settings support character development and plot`;
+
+        return userPrompt;
+    }
+
+    // 4. Narrative Elements and Themes
+    createNarrativeElementsSystemPrompt(prompt: PromptInput): string {
+        let systemPrompt = `You are a narrative elements specialist. Your task is to define the thematic and stylistic elements that will unify a story.
+            
+            Focus on:
+            - Central themes and motifs
+            - Tone and voice
+            - Emotional beats and rhythm
+            - Literary devices and techniques`;
+
+        if (prompt.authorStyle) {
+            systemPrompt += `\n\nDevelop narrative elements in the style of ${prompt.authorStyle}, incorporating their signature themes, tone, and literary techniques.`;
+        }
+
+        systemPrompt += `\n\nCreate cohesive narrative elements that will guide the writing across ${prompt.pages} pages.`;
+
+        return systemPrompt;
+    }
+
+    createNarrativeElementsUserPrompt(prompt: PromptInput, storyStructure: string, characters: string, settings: string): string {
+        let userPrompt = `Based on this story structure, characters, and settings, define the narrative elements for a story about "${prompt.topic}"`;
+        
+        if (prompt.authorStyle) {
+            userPrompt += ` in the style of ${prompt.authorStyle}`;
+        }
+        
+        userPrompt += `.\n\nSTORY STRUCTURE:\n${storyStructure}\n\nCHARACTERS:\n${characters}\n\nSETTINGS:\n${settings}\n\nProvide:
+        - Central themes and messages
+        - Tone and voice guidelines
+        - Key emotional beats and moments
+        - Literary devices and stylistic elements to use`;
+
+        return userPrompt;
+    }
+
+    // 5. Story Plan Integration
+    createStoryPlanIntegrationSystemPrompt(prompt: PromptInput): string {
+        let systemPrompt = `You are a story integration expert. Your task is to combine all story planning elements into a cohesive, comprehensive story plan.
+            
+            Create a unified plan that:
+            - Integrates structure, characters, settings, and narrative elements
+            - Provides clear guidance for ${prompt.pages} pages of writing
+            - Maintains consistency and flow
+            - Serves as a complete blueprint for story generation`;
+
+        if (prompt.authorStyle) {
+            systemPrompt += `\n\nEnsure the integrated plan captures the essence of ${prompt.authorStyle}'s writing approach.`;
+        }
+
+        return systemPrompt;
+    }
+
+    createStoryPlanIntegrationUserPrompt(prompt: PromptInput, storyStructure: string, characters: string, settings: string, narrativeElements: string): string {
+        let userPrompt = `Integrate these story planning components into a comprehensive, unified story plan for "${prompt.topic}"`;
+        
+        if (prompt.authorStyle) {
+            userPrompt += ` in the style of ${prompt.authorStyle}`;
+        }
+        
+        userPrompt += `.\n\nSTORY STRUCTURE:\n${storyStructure}\n\nCHARACTERS:\n${characters}\n\nSETTINGS:\n${settings}\n\nNARRATIVE ELEMENTS:\n${narrativeElements}\n\nCreate a unified story plan that:
+        - Combines all elements cohesively
+        - Provides clear page-by-page guidance
+        - Maintains thematic consistency
+        - Serves as a complete blueprint for writing ${prompt.pages} pages`;
+
+        return userPrompt;
+    }
+
 
 
     /**

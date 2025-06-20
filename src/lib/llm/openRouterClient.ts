@@ -69,6 +69,7 @@ export class OpenRouterClient extends BaseLlmClient {
         systemPrompt?: string
     ): Promise<LlmResponse> {
         const allMessages = systemPrompt ? [{ role: 'system', content: systemPrompt }, ...messages] : messages;
+        const currentModel = this.getCurrentModelName();
 
         type ORResponse = {
             choices: { message: { content: string } }[];
@@ -80,7 +81,7 @@ export class OpenRouterClient extends BaseLlmClient {
         };
 
         const data = await this.postJSON<ORResponse>('/chat/completions', {
-            model: this.config.modelName,
+            model: currentModel,
             messages: allMessages,
             max_tokens: 4000,
         });

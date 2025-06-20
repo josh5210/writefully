@@ -30,7 +30,16 @@ export class Editor {
         const userPrompt = this.promptHandler.createEditorUserPrompt(content.text, originalPrompt, critique, pageContext);
 
         try {
-            const response = await this.apiClient.generateContent(userPrompt, systemPrompt);
+            console.log(`[Editor] Editing content for page ${pageContext ? pageContext.currentPageIndex + 1 : 'unknown'}`);
+            
+            // Use pageGeneration operation type for editing with backup fallback
+            const response = await this.apiClient.generateContentWithFallback(
+                userPrompt, 
+                systemPrompt, 
+                'pageGeneration'
+            );
+
+            console.log(`[Editor] Content editing completed, new length: ${response.content.length} characters`);
 
             // Show the response if we want extended debugging
             if (process.env.EXTENDED_DEBUG === 'true') {
@@ -43,15 +52,25 @@ export class Editor {
                 metadata: {
                     ...content.metadata,
                     iteration: content.metadata.iteration + 1,
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    modelInfo: {
+                        name: this.apiClient.getCurrentModelName(),
+                        provider: 'openrouter'
+                    }
                 }
             };
 
             return editedContent;
         } catch (error) {
-            console.error('Error editing content:', error instanceof Error ? error.message : String(error));
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`[Editor] Content editing failed:`, errorMessage);
+            
+            if (errorMessage.includes('timed out')) {
+                console.error(`[Editor] Content editing timed out - may indicate model performance issues`);
+            }
+            
             // Throw error and don't override original content
-            throw new Error(`Failed to edit content: ${error instanceof Error ? error.message : String(error)}`);
+            throw new Error(`Failed to edit content: ${errorMessage}`);
         }
     }
 }

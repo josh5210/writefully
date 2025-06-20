@@ -7,6 +7,8 @@ interface DatabaseConfig {
   max?: number;
   idleTimeoutMillis?: number;
   connectionTimeoutMillis?: number;
+  // acquireTimeoutMillis?: number;
+  // createTimeoutMillis?: number;
 }
 
 const createDatabaseConfig = (): DatabaseConfig => {
@@ -19,9 +21,11 @@ const createDatabaseConfig = (): DatabaseConfig => {
   return {
     connectionString,
     ssl: process.env.NODE_ENV === 'production',
-    max: 10, // Maximum number of clients in the pool
+    max: 15, // Maximum number of clients in the pool
     idleTimeoutMillis: 30000, // How long a client is allowed to remain idle
-    connectionTimeoutMillis: 2000, // How long to wait when connecting a client
+    connectionTimeoutMillis: 15000, // How long to wait when connecting a client
+    // acquireTimeoutMillis: 20000,  // Acquisition timeout
+    // createTimeoutMillis: 15000, // Creation timeout
   };
 };
 
@@ -62,6 +66,11 @@ export interface DbStory {
   reader_voice?: string;
   quality: 0 | 1 | 2;
   story_plan?: string;
+  // New fields for tiered planning approach
+  story_structure?: string;
+  story_characters?: string;
+  story_settings?: string;
+  story_narrative?: string;
   current_page: number;
   completed_pages: number;
   current_step?: 'planning' | 'writing' | 'critiquing' | 'editing';

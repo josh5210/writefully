@@ -1,100 +1,65 @@
 // src/app/api/story/generate/route.ts
 import { storyService } from "@/lib/services/storyService";
-import { PromptInput, StartStoryResponse } from "@/lib/types";
+import { PromptInput } from "@/lib/types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-    // Validate the request body
-    let body: PromptInput;
     try {
-        body = await request.json();
-    } catch {
-        return NextResponse.json(
-            { error: 'Invalid JSON' },
-            { status: 400 }
-        );
-    }
+        // Frontend sends the prompt directly, not wrapped in { request: ... }
+        const promptInput: PromptInput = await request.json();
 
-    try {
-        // Validate the required fields
-        if (!body.topic || !body.pages || body.quality === undefined) {
+        console.log('Received request body:', promptInput);
+        console.log('Topic present:', !!promptInput?.topic);
+        console.log('Pages present:', !!promptInput?.pages);
+        console.log('Topic value:', promptInput?.topic);
+        console.log('Pages value:', promptInput?.pages);
+
+        // Validate input
+        if (!promptInput?.topic || !promptInput?.pages) {
+            console.log('Validation failed - missing topic or pages');
             return NextResponse.json(
-                { error: 'Missing required fields: topic, pages, quality' },
+                { error: 'Topic and pages are required' },
                 { status: 400 }
             );
         }
 
-        // Constrain pages: 1-50
-        if (body.pages < 1 || body.pages > 50) {
+        if (promptInput.pages < 1 || promptInput.pages > 20) {
+            console.log('Validation failed - pages out of range:', promptInput.pages);
             return NextResponse.json(
-                { error: 'Pages must be between 1 and 50' },
+                { error: 'Pages must be between 1 and 20' },
                 { status: 400 }
             );
         }
 
-        if (body.topic.length > 500) {
-            return NextResponse.json(
-                { error: 'Topic must be less than 500 characters' },
-                { status: 400 }
-            );
-        }
+        console.log('Story generation initiated for session', promptInput.topic);
+        console.log(`Topic "${promptInput.topic}", Pages: ${promptInput.pages}, Quality: ${promptInput.quality}`);
 
-        // Create validated prompt object
-        const prompt: PromptInput = {
-            topic: body.topic.trim(),
-            pages: body.pages,
-            authorStyle: typeof body.authorStyle === 'string' ? body.authorStyle.trim() : undefined,
-            quality: body.quality as 0 | 1 | 2,
-            artStyle: typeof body.artStyle === 'string' ? body.artStyle.trim() : undefined,
-            readerVoice: typeof body.readerVoice === 'string' ? body.readerVoice.trim() : undefined,
-        };
+        // Create story session in database - this should be fast (< 5 seconds)
+        const { sessionId, storyId, status } = await storyService.createStorySession(promptInput);
 
-        // Create story session in database
-        const session = await storyService.createStorySession(prompt);
+        console.log(`Story session created: ${sessionId}, ready for orchestrated generation`);
 
-        // Start story generation using story service
-        try {
-            await storyService.startGeneration(session.sessionId);
-        } catch (error) {
-            console.error('Failed to start story generation:', error);
-
-            return NextResponse.json(
-                { error: 'Failed to start story generation' },
-                { status: 500 }
-            );
-        }
-
-        console.log(`Story generation initiated for session ${session.sessionId}`);
-        console.log(`Topic "${prompt.topic}", Pages: ${prompt.pages}, Quality: ${prompt.quality}`);
-
-        // Return response with polling URLs
-        const response: StartStoryResponse = {
-            sessionId: session.sessionId,
-            storyId: session.storyId,
-            status: session.status,
-            message: 'Story generation started successfully',
+        // Return immediately - let frontend orchestrate the multi-stage process
+        return NextResponse.json({
+            sessionId,
+            storyId,
+            status,
+            message: 'Story session created successfully. Use orchestration service to begin generation.',
             progress: {
                 currentPage: 0,
-                totalPages: prompt.pages,
+                totalPages: promptInput.pages,
                 completedPages: 0,
-                currentStep: 'planning'
+                currentStep: 'pending'
             },
-        };
-
-        // Add polling URLs for convenience
-        const responseWithUrls = {
-            ...response,
-            pollUrl: `/api/story/${session.sessionId}/status`,
-            pagesUrl: `/api/story/${session.sessionId}/pages`
-        };
-
-        return NextResponse.json(responseWithUrls, { status: 201 });
+            orchestrationRequired: true // Signal frontend to use orchestration
+        }, { status: 201 });
 
     } catch (error) {
-        console.error('Error in story generation endpoint:', error);
-        return NextResponse.json(
-            { error: 'Failed to process story generation request' },
-            { status: 500 }
-        );
+        console.error('Error in story generation:', error);
+        
+        return NextResponse.json({
+            error: 'Failed to create story session',
+            details: error instanceof Error ? error.message : String(error)
+        }, { status: 500 });
     }
 }

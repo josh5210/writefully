@@ -130,9 +130,10 @@ export class DatabaseOrchestrator extends EventEmitter {
     try {
       await dbRepository.startGenerationJob(jobId);
       
+      // Reduced timeout from 55s to 45s to work better with tiered approach
       const storyPlan = await this.executeWithTimeout(
         () => this.storyPlanner.planStory(prompt),
-        55000 // 55 seconds to leave buffer
+        45000 // 45 seconds - allows for faster timeout and backup fallback
       );
 
       await dbRepository.updateStoryProgress(this.state.storyId, { storyPlan });
@@ -145,6 +146,14 @@ export class DatabaseOrchestrator extends EventEmitter {
       this.emit('story:plan:created', { storyPlan });
       
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[DatabaseOrchestrator] Story plan generation failed for story ${this.state.storyId}:`, errorMessage);
+      
+      // Enhanced error handling with more context
+      if (errorMessage.includes('timed out')) {
+        console.error(`[DatabaseOrchestrator] Story planning timed out - this may indicate LLM performance issues`);
+      }
+      
       await this.handleJobError(jobId, error);
       throw error;
     }

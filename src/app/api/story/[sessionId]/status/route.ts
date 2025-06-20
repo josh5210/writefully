@@ -50,8 +50,8 @@ export async function GET(
     }));
 
     // Debug logging for status endpoint
-    console.log(`[Status API] Session: ${sessionId}, Status: ${story.status}, Completed: ${completedPages.length}/${story.total_pages}`);
-    console.log(`[Status API] Story updated_at: ${story.updated_at}`);
+    // console.log(`[Status API] Session: ${sessionId}, Status: ${story.status}, Completed: ${completedPages.length}/${story.total_pages}`);
+    // console.log(`[Status API] Story updated_at: ${story.updated_at}`);
 
     const response = {
       sessionId,

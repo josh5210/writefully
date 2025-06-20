@@ -28,26 +28,40 @@ export class Writer {
         const userPrompt = this.promptHandler.createWriterUserPrompt(prompt, pageContext);
 
         try {
-            // Generate and return content
-            const response = await this.apiClient.generateContent(userPrompt, systemPrompt);
+            console.log(`[Writer] Generating content for page ${pageContext ? pageContext.currentPageIndex + 1 : 'unknown'}`);
+            
+            // Use pageGeneration operation type for appropriate timeout and backup fallback
+            const response = await this.apiClient.generateContentWithFallback(
+                userPrompt, 
+                systemPrompt, 
+                'pageGeneration'
+            );
 
-            const content: Content = {
+            console.log(`[Writer] Content generation successful, length: ${response.content.length} characters`);
+
+            // Return the Content object with metadata
+            return {
                 text: response.content,
                 metadata: {
                     prompt,
                     iteration: 1,
                     timestamp: new Date(),
                     modelInfo: {
-                        name: this.apiClient['config'].modelName,
-                        provider: this.apiClient['config'].provider
-                    }
+                        name: this.apiClient.getCurrentModelName ? this.apiClient.getCurrentModelName() : 'unknown',
+                        provider: 'openrouter'
+                    },
+                    pageNumber: pageContext?.currentPageIndex
                 }
             };
-
-            return content;
         } catch (error) {
-            console.error('Error generating content:', error instanceof Error ? error.message : String(error));
-            throw new Error(`Failed to generate content: ${error instanceof Error ? error.message : String(error)}`);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`[Writer] Content generation failed:`, errorMessage);
+            
+            if (errorMessage.includes('timed out')) {
+                console.error(`[Writer] Content generation timed out - may indicate model performance issues`);
+            }
+            
+            throw new Error(`Failed to generate content: ${errorMessage}`);
         }
     }
 }

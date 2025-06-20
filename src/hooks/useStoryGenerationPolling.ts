@@ -184,34 +184,90 @@ export function useStoryGenerationPolling(): UseStoryGenerationPollingReturn {
     }
   }, [sessionId, fetchStoryStatus]);
 
-  const startPolling = useCallback(() => {
-    console.log(`[Polling] startPolling called with sessionId: ${sessionId}`);
+  const startPolling = useCallback((explicitSessionId?: string) => {
+    const targetSessionId = explicitSessionId || sessionId;
     
-    // Clear any existing polling
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
     }
 
-    // Reset pause state
     isPausedRef.current = false;
     lastUpdatedRef.current = '';
 
-    if (!sessionId) {
+    if (!targetSessionId) {
       console.log(`[Polling] No sessionId available, cannot start polling`);
       return;
     }
 
-    console.log(`[Polling] Starting polling interval for session: ${sessionId}`);
+    console.log(`[Polling] Starting polling interval for session: ${targetSessionId}`);
+    
+    // Create polling function that uses the target session ID
+    const pollWithSessionId = async () => {
+      if (isPausedRef.current) {
+        console.log(`[Polling] Polling paused, skipping poll`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/story/${targetSessionId}/status`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data: StoryStatus = await response.json();
+        
+        console.log(`[Polling] Status: ${data.status}, Updated: ${data.updatedAt}`);
+        console.log(`[Polling] Progress: ${data.progress.completedPages}/${data.progress.totalPages} pages`);
+
+        // Check if we've already processed this update
+        if (lastUpdatedRef.current === data.updatedAt) {
+          console.log(`[Polling] No changes detected (same updatedAt: ${data.updatedAt})`);
+          return;
+        }
+
+        lastUpdatedRef.current = data.updatedAt;
+
+        console.log(`[Polling] Updating state - Status: ${data.status}`);
+        
+        // Update all state
+        setStatus(data.status as 'idle' | 'pending' | 'generating' | 'completed' | 'failed' | 'cancelled');
+        setProgress(data.progress);
+        
+        if (data.content) {
+          setStoryData(data.content);
+        }
+
+        if (data.error) {
+          setError(data.error);
+        }
+
+        // Stop polling if story is complete or failed
+        if (['completed', 'failed', 'cancelled'].includes(data.status)) {
+          console.log(`[Polling] Story ${data.status}, stopping polling`);
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+            setIsPolling(false);
+          }
+        }
+
+      } catch (error) {
+        console.error(`[Polling] Error fetching status:`, error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch status');
+      }
+    };
     
     // Start polling every 5 seconds (reduced from 15s for better responsiveness)
-    const interval = setInterval(pollStoryStatus, 5000);
+    const interval = setInterval(pollWithSessionId, 5000);
     pollingIntervalRef.current = interval;
     setIsPolling(true);
 
     console.log(`[Polling] Polling started, doing immediate poll`);
     // Do an immediate poll
-    pollStoryStatus();
-  }, [sessionId, pollStoryStatus]);
+    pollWithSessionId();
+  }, [sessionId]);
 
   // Start polling when sessionId is set and status is generating
   useEffect(() => {
@@ -237,6 +293,44 @@ export function useStoryGenerationPolling(): UseStoryGenerationPollingReturn {
     // Trigger immediate poll when resuming
     pollStoryStatus();
   }, [pollStoryStatus]);
+
+  // New function to handle orchestration process
+  const startOrchestrationProcess = useCallback(async (sessionId: string) => {
+    console.log(`[StoryGeneration] Starting orchestration for session ${sessionId}`);
+    
+    try {
+      // Import the orchestration service dynamically to avoid SSR issues
+      const { storyOrchestrationService } = await import('@/lib/services/storyOrchestrationService');
+      
+      const result = await storyOrchestrationService.orchestrateStoryGeneration(
+        sessionId,
+        (progressState) => {
+          console.log(`[StoryGeneration] Orchestration progress: Step ${progressState.currentStep + 1}/${progressState.steps.length}`);
+          
+          // Update progress based on orchestration state
+          setProgress(prev => ({
+            ...prev,
+            currentStep: 'planning', // Keep it as planning during orchestration
+          }));
+        }
+      );
+
+      if (result.status === 'completed') {
+        console.log(`[StoryGeneration] Orchestration completed successfully`);
+        // Start polling to get the final story content - pass sessionId explicitly
+        startPolling(sessionId);
+      } else {
+        console.error(`[StoryGeneration] Orchestration failed:`, result.error);
+        setError(result.error || 'Orchestration failed');
+        setStatus('failed');
+      }
+
+    } catch (error) {
+      console.error(`[StoryGeneration] Orchestration error:`, error);
+      setError(error instanceof Error ? error.message : 'Orchestration failed');
+      setStatus('failed');
+    }
+  }, [startPolling]);
 
   const startGeneration = useCallback(async (prompt: PromptInput) => {
     resetState();
@@ -267,7 +361,17 @@ export function useStoryGenerationPolling(): UseStoryGenerationPollingReturn {
         completedPages: 0,
       });
 
-      // Polling will start automatically via useEffect when sessionId is set
+      // Check if orchestration is required (new multi-stage approach)
+      if (data.orchestrationRequired) {
+        console.log(`[StoryGeneration] Orchestration required for session ${data.sessionId}`);
+        console.log(`[StoryGeneration] Starting multi-stage orchestration...`);
+        
+        // Start the orchestration process
+        await startOrchestrationProcess(data.sessionId);
+      } else {
+        // Legacy approach - polling will start automatically via useEffect when sessionId is set
+        console.log(`[StoryGeneration] Using legacy generation approach`);
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start story generation');
@@ -275,7 +379,7 @@ export function useStoryGenerationPolling(): UseStoryGenerationPollingReturn {
     } finally {
       setIsStarting(false);
     }
-  }, [resetState]);
+  }, [resetState, startOrchestrationProcess]);
 
   const cancelGeneration = useCallback(async () => {
     if (!sessionId) return;
