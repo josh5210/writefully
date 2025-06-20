@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { dbRepository } from '@/lib/db/repository';
-import { createLlmConfig } from '@/lib/llm/config';
-import { createLlmClient } from '@/lib/llm/llmApiInterfaces';
+// import { createLlmConfig } from '@/lib/llm/config';
+import { createFastLlmClient } from '@/lib/llm/llmApiInterfaces';
 import { PromptHandler } from '@/lib/modules/promptHandler';
 import { PromptInput } from '@/lib/types';
 
@@ -40,9 +40,8 @@ export async function POST(
       quality: story.quality as 0 | 1 | 2
     };
 
-    // Create LLM client and prompt handler
-    const config = createLlmConfig();
-    const llmClient = createLlmClient(config);
+    // Create fast LLM client and prompt handler for planning
+    const llmClient = createFastLlmClient();
     const promptHandler = new PromptHandler();
 
     // Generate narrative elements with reduced timeout for Vercel limits
@@ -53,7 +52,7 @@ export async function POST(
       story.story_settings || ''
     );
 
-    console.log(`[PlanNarrative] Generating narrative elements with 50s timeout`);
+    console.log(`[PlanNarrative] Generating narrative elements with fast model: ${llmClient.getCurrentModelName()}`);
     
     const startTime = Date.now();
     const response = await llmClient.generateContentWithFallback(

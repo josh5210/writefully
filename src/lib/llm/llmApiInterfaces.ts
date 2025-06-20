@@ -1,7 +1,7 @@
 // /src/lib/llm/llmApiInterfaces.ts
 
 import { LlmApiConfig } from "../types";
-import { EnhancedLlmApiConfig } from "./config";
+import { EnhancedLlmApiConfig, createFastLlmConfig } from "./config";
 import { BaseLlmClient } from "./baseClient";
 import { OpenRouterClient } from "./openRouterClient";
 
@@ -42,6 +42,25 @@ export function createLlmClient(configOverride?: Partial<LlmApiConfig> | Partial
 
     // Log configuration status
     console.log(`[LLM] Creating client with primary model: ${config.modelName}${config.backupModelName ? `, backup model: ${config.backupModelName}` : ''}`);
+
+    // Create the client (openrouter specific, update this if using something else)
+    return new OpenRouterClient(config);
+}
+
+/**
+ * Factory function to create a fast LLM client optimized for planning operations
+ * @param configOverride optional config override
+ * @returns Instance of the fast LLM client
+ */
+export function createFastLlmClient(configOverride?: Partial<LlmApiConfig> | Partial<EnhancedLlmApiConfig>): BaseLlmClient {
+    // Get fast model config
+    const fastConfig = createFastLlmConfig();
+    
+    // Merge with overrides if provided
+    const config = configOverride ? { ...fastConfig, ...configOverride } : fastConfig;
+
+    // Log configuration status
+    console.log(`[LLM] Creating fast client with primary model: ${config.modelName}${config.backupModelName ? `, backup model: ${config.backupModelName}` : ''}`);
 
     // Create the client (openrouter specific, update this if using something else)
     return new OpenRouterClient(config);
