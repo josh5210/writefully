@@ -80,7 +80,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                         value={pages}
                         onChange={(e) => setPages(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
                         min="1"
-                        max="50"
+                        max="20"
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
                                  bg-[var(--input)] text-[var(--foreground)]
                                  focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:border-transparent
