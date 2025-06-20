@@ -4,7 +4,7 @@ import { storyService } from '@/lib/services/storyService';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const { sessionId } = await params;
 
