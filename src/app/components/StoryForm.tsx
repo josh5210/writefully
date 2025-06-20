@@ -78,7 +78,7 @@ export default function StoryForm({ onSubmit, isLoading = false, disabled = fals
                     <input
                         type="number"
                         value={pages}
-                        onChange={(e) => setPages(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                        onChange={(e) => setPages(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
                         min="1"
                         max="20"
                         className="w-full px-4 py-3 border border-[var(--border)] rounded-md 
