@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/pg": "^8.15.4",
     "@types/uuid": "^10.0.0",
+    "lucide-react": "^0.519.0",
     "next": "15.3.2",
     "pg": "^8.16.2",
     "react": "^19.0.0",

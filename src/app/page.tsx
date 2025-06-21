@@ -7,6 +7,7 @@ import { useStoryGenerationPolling } from '@/hooks/useStoryGenerationPolling';
 import StoryForm from '@/app/components/StoryForm';
 import ProgressDisplay from '@/app/components/ProgressDisplay';
 import StoryReader from '@/app/components/StoryReader';
+import StoryDownloader from './components/StoryDownloader';
 
 export default function Home() {
     const {
@@ -21,9 +22,15 @@ export default function Home() {
         resetState,
     } = useStoryGenerationPolling();
 
-    // State to control form visibility
+    // State to control form visibility and store original prompt data
     const [showForm, setShowForm] = useState(true);
-
+    const [currentPrompt, setCurrentPrompt] = useState<{
+        topic: string;
+        pages: number;
+        authorStyle?: string;
+        quality: 0 | 1 | 2;
+    } | null>(null);
+    
     // Enhanced start generation that hides the form
     const handleStartGeneration = useCallback(async (prompt: {
         topic: string;
@@ -31,6 +38,7 @@ export default function Home() {
         authorStyle?: string;
         quality: 0 | 1 | 2;
     }) => {
+        setCurrentPrompt(prompt);
         setShowForm(false);
         await startGeneration(prompt);
     }, [startGeneration]);
@@ -62,7 +70,7 @@ export default function Home() {
         <div className="min-h-screen bg-gradient-to-br from-[var(--background)] to-[var(--background)]/95 
                         relative overflow-hidden">
             {/* Subtle background pattern */}
-            <div className="absolute inset-0 opacity-5 bg-[url('/textures/paper.png')] pointer-events-none"></div>
+            {/* <div className="absolute inset-0 opacity-5 bg-[url('/textures/paper.png')] pointer-events-none"></div> */}
             
             <div className="relative z-10 container mx-auto px-4 py-8">
                 <div className="text-center mb-12">
@@ -127,6 +135,16 @@ export default function Home() {
                             isCancelling={isCancelling}
                         />
                     </div>
+                )}
+
+                {/* Story Download Component - Show when story is completed */}
+                {status === 'completed' && currentPrompt && formattedPages.length > 0 && (
+                    <StoryDownloader
+                        pages={formattedPages}
+                        storyTopic={currentPrompt.topic}
+                        totalPages={currentPrompt.pages}
+                        authorStyle={currentPrompt.authorStyle}
+                    />
                 )}
 
                 {/* Story Reader */}
